@@ -44,16 +44,21 @@ layers: [{
   id: 'base', type: 'raster', source: 'base',
   paint: {
     // VWorld 육지 배경이 누런 베이지라 그대로 쓰면 화면이 탁하다.
-    // 채도를 많이 빼고 밝기 하한을 올려 밝은 회백색으로 맞춘다
-    'raster-saturation': -0.6,
-    'raster-contrast': -0.05,
-    'raster-brightness-min': 0.36
+    // 채도를 크게 빼고 밝기 하한을 올려 밝은 회백색으로 맞춘다
+    'raster-saturation': -0.7,
+    'raster-contrast': 0,
+    'raster-brightness-min': 0.52
   }
 }]
 ```
 
-**밝기 하한 0.36이 상한선이다.** 0.44를 넘기면 도로가 배경에 묻혀 사라진다.
-배경은 밝으면서 도로·지명·강이 남는 지점이 여기다.
+**밝기 0.52는 도로가 거의 안 보이는 값이며, 그 대가를 알고 고른 값이다.**
+배경보다 밝은 톤을 우선했다. 0.6을 넘기면 지명까지 흐려져 지도 구실을 못 한다.
+
+배경 색감은 **사실상 축소 화면 전용 설정**이다.
+z15 이상에서는 필지가 화면을 덮어 배경이 거의 보이지 않고,
+z15 미만에서는 필지를 아예 그리지 않기 때문이다.
+색감을 손볼 때는 z13~14에서 확인해야 차이가 보인다.
 
 색감은 `raster-saturation` / `raster-contrast` / `raster-brightness-min·max` /
 `raster-hue-rotate`로 조절한다. 타일 자체를 바꿀 필요가 없다.

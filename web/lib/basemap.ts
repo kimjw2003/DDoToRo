@@ -61,14 +61,17 @@ export function basemapStyle(): StyleSpecification {
           */
           /*
             VWorld 육지 배경이 누런 베이지라 그대로 쓰면 화면이 탁하다.
-            채도를 많이 빼고 밝기 하한을 올려 네이버 지도 수준의 밝은 회백색으로 맞춘다.
+            채도를 크게 빼고 밝기 하한을 올려 밝은 회백색으로 맞춘다.
 
-            밝기를 더 올리면(0.44 이상) 도로가 배경에 묻혀 사라진다.
-            0.36이 배경은 밝으면서 도로·지명·강이 남는 지점이다.
+            0.52는 도로가 거의 안 보이는 값이며, 그 대가를 알고 고른 값이다.
+            배경 색감은 사실상 축소 화면 전용 설정이다.
+            z15 이상에서는 필지가 화면을 덮어 배경이 거의 보이지 않고,
+            z15 미만에서는 필지를 아예 그리지 않기 때문이다.
+            더 올리면(0.6+) 지명까지 흐려져 지도 구실을 못 한다.
           */
-          "raster-saturation": usingVWorld ? -0.6 : -0.6,
-          "raster-contrast": usingVWorld ? -0.05 : -0.15,
-          "raster-brightness-min": usingVWorld ? 0.36 : 0.08,
+          "raster-saturation": usingVWorld ? -0.7 : -0.6,
+          "raster-contrast": usingVWorld ? 0 : -0.15,
+          "raster-brightness-min": usingVWorld ? 0.52 : 0.08,
           "raster-opacity": 1,
         },
       },
