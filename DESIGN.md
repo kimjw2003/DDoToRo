@@ -43,17 +43,21 @@ sources: {
 layers: [{
   id: 'base', type: 'raster', source: 'base',
   paint: {
-    // 배경이 필지 색을 이기지 않도록 채도를 절반 낮추고,
-    // 누런 육지 배경을 띄우기 위해 밝기 하한을 올린다
-    'raster-saturation': -0.5,
-    'raster-contrast': -0.12,
-    'raster-brightness-min': 0.24
+    // VWorld 육지 배경이 누런 베이지라 그대로 쓰면 화면이 탁하다.
+    // 채도를 많이 빼고 밝기 하한을 올려 밝은 회백색으로 맞춘다
+    'raster-saturation': -0.6,
+    'raster-contrast': -0.05,
+    'raster-brightness-min': 0.36
   }
 }]
 ```
 
+**밝기 하한 0.36이 상한선이다.** 0.44를 넘기면 도로가 배경에 묻혀 사라진다.
+배경은 밝으면서 도로·지명·강이 남는 지점이 여기다.
+
 색감은 `raster-saturation` / `raster-contrast` / `raster-brightness-min·max` /
 `raster-hue-rotate`로 조절한다. 타일 자체를 바꿀 필요가 없다.
+`hue-rotate`는 누런 기를 빼려다 초록 산림까지 청록으로 돌려버리므로 쓰지 않는다.
 
 **CSS `filter: grayscale()`을 쓰지 말 것.**
 MapLibre는 베이스맵과 필지 폴리곤을 **같은 WebGL 캔버스 하나에** 그린다.

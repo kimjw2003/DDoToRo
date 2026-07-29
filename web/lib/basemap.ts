@@ -59,11 +59,16 @@ export function basemapStyle(): StyleSpecification {
             완전히 빼면(-1) 지명·도로 구분이 흐려져 컬러로 바꾼 의미가 사라진다.
             OSM 폴백은 색이 강해 조금 더 눌러준다.
           */
-          "raster-saturation": usingVWorld ? -0.5 : -0.6,
-          "raster-contrast": usingVWorld ? -0.12 : -0.15,
-          // VWorld 육지 배경이 누런 베이지라 밝기 하한을 올려 톤을 띄운다.
-          // 배경이 연해질수록 위에 얹은 가격 램프가 또렷해진다
-          "raster-brightness-min": usingVWorld ? 0.24 : 0.08,
+          /*
+            VWorld 육지 배경이 누런 베이지라 그대로 쓰면 화면이 탁하다.
+            채도를 많이 빼고 밝기 하한을 올려 네이버 지도 수준의 밝은 회백색으로 맞춘다.
+
+            밝기를 더 올리면(0.44 이상) 도로가 배경에 묻혀 사라진다.
+            0.36이 배경은 밝으면서 도로·지명·강이 남는 지점이다.
+          */
+          "raster-saturation": usingVWorld ? -0.6 : -0.6,
+          "raster-contrast": usingVWorld ? -0.05 : -0.15,
+          "raster-brightness-min": usingVWorld ? 0.36 : 0.08,
           "raster-opacity": 1,
         },
       },
