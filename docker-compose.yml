@@ -1,0 +1,27 @@
+services:
+  db:
+    # 공식 postgis/postgis는 amd64 전용이라 Apple Silicon에서 구동되지 않는다.
+    # imresamu/postgis는 같은 Dockerfile을 arm64 포함 multi-arch로 빌드한 이미지다.
+    image: imresamu/postgis:16-3.5
+    container_name: ddotoro-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PGDATABASE:-ddotoro}
+      POSTGRES_USER: ${PGUSER:-ddotoro}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-ddotoro_local}
+      # 한글 정렬/검색을 위해 ko_KR 대신 C.UTF-8을 쓴다 (LIKE 인덱스 동작이 단순해진다)
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+    ports:
+      - "${PGPORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # 최초 기동 시 1회 자동 실행된다. 스키마를 바꾸려면 볼륨을 지우고 다시 올려야 한다
+      - ./etl/sql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-ddotoro} -d ${PGDATABASE:-ddotoro}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  pgdata:
