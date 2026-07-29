@@ -15,9 +15,33 @@ Task 5(지도 화면)와 Task 6(상세 페이지) 작업 시 이 문서를 따�
 이유: 이 서비스가 파는 것은 가격 정보 하나다. 색을 여기저기 쓰면 사용자 눈이 어디를 봐야 할지 모른다.
 경쟁 서비스(밸류맵, 디스코)가 어렵다는 평을 듣는 이유가 정확히 이것이다.
 
-**베이스맵은 반드시 무채색으로 처리한다.** OSM 기본 타일은 초록·베이지가 섞여 있어 가격 램프와 충돌한다.
-CSS `filter: grayscale(1) contrast(0.85) brightness(1.08)`을 타일 레이어에 적용하거나,
-CartoDB Positron 같은 무채색 타일을 사용한다.
+**베이스맵은 VWorld `white` 타일을 쓴다.** 흰 바탕에 회색 도로로 그려져 가격 램프와 충돌하지 않는다.
+OSM 기본 타일은 초록·베이지가 섞여 있어 쓰지 않는다 (공식 타일 서버는 실서비스 사용도 금지된다).
+
+```js
+sources: {
+  base: {
+    type: 'raster',
+    tiles: [`https://api.vworld.kr/req/wmts/1.0.0/${KEY}/white/{z}/{y}/{x}.png`],
+    tileSize: 256, minzoom: 5, maxzoom: 18,
+    attribution: '<a href="https://www.vworld.kr">VWorld</a>'
+  }
+},
+layers: [{
+  id: 'base', type: 'raster', source: 'base',
+  paint: { 'raster-saturation': -1 }   // 강·공원·IC 아이콘에 남은 색을 마저 뺀다
+}]
+```
+
+**CSS `filter: grayscale()`을 쓰지 말 것.**
+MapLibre는 베이스맵과 필지 폴리곤을 **같은 WebGL 캔버스 하나에** 그린다.
+캔버스에 CSS 필터를 걸면 타일뿐 아니라 **가격 램프 색까지 함께 죽어** 이 문서의 설계 명제가 무너진다.
+채도 제거는 반드시 래스터 **레이어의 paint 속성**으로 한다.
+
+구현 시 주의 두 가지:
+- 타일 좌표가 **`{z}/{y}/{x}` 순서**다. 표준 XYZ(`{z}/{x}/{y}`)와 x·y가 뒤바뀌어 있다
+- 타일 상한이 z18이다. `maxzoom: 18`을 명시하면 그 이상에서는 확대해 쓴다.
+  배경만 약간 흐려지고 필지 폴리곤은 벡터라 선명하게 유지된다
 
 ---
 
