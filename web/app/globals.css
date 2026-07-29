@@ -1,26 +1,111 @@
 @import "tailwindcss";
+/* Pretendard는 layout.tsx에서 <link>로 불러온다.
+   여기서 @import 하면 Tailwind가 전개한 규칙 뒤로 밀려 CSS 스펙 위반이 된다 */
 
+/*
+  DESIGN.md 토큰. 여기 정의된 값만 쓴다.
+
+  설계 명제: 이 화면에서 색은 오직 가격을 뜻한다.
+  UI 크롬·텍스트·아이콘은 전부 무채색이고, 채도가 있는 색은 가격 단계에만 쓴다.
+  선택 상태조차 색이 아니라 먹선 굵기로 표현한다.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #1c1c1a;       /* 본문, 제목, 선택 테두리 */
+  --ink-mid: #6b6b66;   /* 보조 텍스트, 라벨 */
+  --ink-soft: #9a9a93;  /* 힌트, 단위 표기 */
+  --paper: #fafaf7;     /* 화면 배경 */
+  --surface: #ffffff;   /* 패널 배경 */
+  --line: #e3e1da;      /* 1px 구분선 */
+
+  /* 가격 램프 5단계. 단일 색상 램프이며 무지개 팔레트는 금지한다 */
+  --p1: #e9f0eb;
+  --p2: #bcd5c6;
+  --p3: #86b29a;
+  --p4: #4e866d;
+  --p5: #234f3d;
+  --p-none: #f0eee8;    /* 가격 정보 없음 */
+
+  --font-ui: "Pretendard Variable", Pretendard, -apple-system,
+    BlinkMacSystemFont, system-ui, sans-serif;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: var(--ink);
+  --color-ink-mid: var(--ink-mid);
+  --color-ink-soft: var(--ink-soft);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --font-ui: var(--font-ui);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  /* 주 사용자가 40~60대라 본문 행간을 넉넉히 둔다 */
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+  숫자와 지번에만 명조를 쓴다.
+  토지대장·등기부등본 같은 공적 장부가 명조로 인쇄되기 때문이며,
+  공시지가가 시세가 아니라 공적으로 고시된 가격임을 서체로 전달한다.
+  쓰는 곳은 총액, 지번, 상세 페이지 h1 세 군데뿐이다.
+*/
+.font-serif-num {
+  font-family: var(--font-myeongjo), "Nanum Myeongjo", "Noto Serif KR", serif;
+  font-weight: 400;
+}
+
+/* 그 외 숫자는 자릿수가 흔들리지 않게 tabular */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 키보드 포커스가 반드시 보여야 한다 */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* 애니메이션은 하단 시트 전환과 패널 페이드인 두 가지만 허용한다 */
+@keyframes panel-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.panel-fade-in {
+  animation: panel-fade-in 160ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-fade-in {
+    animation: none;
+  }
+  .sheet-transition {
+    transition: none !important;
+  }
+}
+
+/* MapLibre 기본 크롬도 무채색으로 맞춘다 */
+.maplibregl-ctrl-group {
+  border: 1px solid var(--line) !important;
+  box-shadow: none !important;
+}
+
+.maplibregl-ctrl-attrib {
+  font-family: var(--font-ui);
+  font-size: 11px;
 }

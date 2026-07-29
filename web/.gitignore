@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# node_modules에서 복사되는 MapLibre 워커 (predev/prebuild가 생성)
+/public/maplibre/
