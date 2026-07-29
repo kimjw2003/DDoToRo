@@ -274,13 +274,10 @@ export default function ParcelMap({ selectedPnu, onSelect, flyTo }: Props) {
     <div className="relative h-full w-full">
       <div ref={container} className="h-full w-full" />
 
-      {tooFar && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <p className="rounded border border-[var(--line)] bg-[var(--surface)] px-5 py-3 text-[14px] text-[var(--ink-mid)]">
-            지도를 확대하면 필지가 표시됩니다
-          </p>
-        </div>
-      )}
+      {/*
+        z15 미만에서는 여전히 필지를 그리지 않지만(34만 건을 한 번에 내려보낼 수 없다)
+        안내 문구는 띄우지 않는다. 지도를 덮는 배너가 거슬린다는 판단이다.
+      */}
 
       {failed && (
         <div className="absolute left-1/2 top-4 -translate-x-1/2">
