@@ -59,8 +59,11 @@ export function basemapStyle(): StyleSpecification {
             완전히 빼면(-1) 지명·도로 구분이 흐려져 컬러로 바꾼 의미가 사라진다.
             OSM 폴백은 색이 강해 조금 더 눌러준다.
           */
-          "raster-saturation": usingVWorld ? -0.25 : -0.6,
-          "raster-contrast": usingVWorld ? -0.05 : -0.15,
+          "raster-saturation": usingVWorld ? -0.5 : -0.6,
+          "raster-contrast": usingVWorld ? -0.12 : -0.15,
+          // VWorld 육지 배경이 누런 베이지라 밝기 하한을 올려 톤을 띄운다.
+          // 배경이 연해질수록 위에 얹은 가격 램프가 또렷해진다
+          "raster-brightness-min": usingVWorld ? 0.24 : 0.08,
           "raster-opacity": 1,
         },
       },

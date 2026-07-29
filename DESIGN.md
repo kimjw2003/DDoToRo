@@ -42,10 +42,18 @@ sources: {
 },
 layers: [{
   id: 'base', type: 'raster', source: 'base',
-  // 배경이 필지 색을 이기지 않을 만큼만 누른다
-  paint: { 'raster-saturation': -0.25, 'raster-contrast': -0.05 }
+  paint: {
+    // 배경이 필지 색을 이기지 않도록 채도를 절반 낮추고,
+    // 누런 육지 배경을 띄우기 위해 밝기 하한을 올린다
+    'raster-saturation': -0.5,
+    'raster-contrast': -0.12,
+    'raster-brightness-min': 0.24
+  }
 }]
 ```
+
+색감은 `raster-saturation` / `raster-contrast` / `raster-brightness-min·max` /
+`raster-hue-rotate`로 조절한다. 타일 자체를 바꿀 필요가 없다.
 
 **CSS `filter: grayscale()`을 쓰지 말 것.**
 MapLibre는 베이스맵과 필지 폴리곤을 **같은 WebGL 캔버스 하나에** 그린다.
