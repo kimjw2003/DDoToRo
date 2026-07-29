@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import ParcelMap from "@/components/ParcelMap";
 import ParcelPanel, { type ParcelDetail } from "@/components/ParcelPanel";
 import Legend from "@/components/Legend";
+import SearchBox, { type SearchHit } from "@/components/SearchBox";
 import { formatWon } from "@/lib/format";
 
 /** 모바일 하단 시트 스냅 3단계. 필지를 누르면 중간으로 열린다 */
@@ -76,6 +77,16 @@ export default function MapView() {
       s === "collapsed" ? "middle" : s === "middle" ? "expanded" : "collapsed",
     );
 
+  // 검색 결과를 고르면 지도를 그 필지로 옮기고 선택 상태로 만든다
+  const [flyTo, setFlyTo] = useState<{ lng: number; lat: number } | null>(null);
+  const handlePick = useCallback(
+    (hit: SearchHit) => {
+      setFlyTo({ lng: hit.lng, lat: hit.lat });
+      handleSelect(hit.pnu);
+    },
+    [handleSelect],
+  );
+
   const panel = (
     <ParcelPanel
       parcel={shown}
@@ -94,12 +105,19 @@ export default function MapView() {
           <p className="text-[13px] text-[var(--ink-soft)]">
             경기 양평군 땅값 조회
           </p>
+          <div className="mt-3">
+            <SearchBox onPick={handlePick} />
+          </div>
         </header>
         {panel}
       </aside>
 
       <div className="relative min-h-0 flex-1">
-        <ParcelMap selectedPnu={selectedPnu} onSelect={handleSelect} />
+        <ParcelMap
+          selectedPnu={selectedPnu}
+          onSelect={handleSelect}
+          flyTo={flyTo}
+        />
 
         {/*
           범례는 좌하단 고정.

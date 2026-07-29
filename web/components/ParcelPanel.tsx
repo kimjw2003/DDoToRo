@@ -151,6 +151,14 @@ export default function ParcelPanel({
           </p>
         )}
       </section>
+
+      {/* 링크는 강조색 대신 밑줄로 표시한다 */}
+      <a
+        href={`/land/${parcel.pnu}`}
+        className="mt-5 inline-flex min-h-[44px] items-center text-[14px] text-[var(--ink)] underline underline-offset-4"
+      >
+        이 땅의 상세 페이지
+      </a>
     </div>
   );
 }
