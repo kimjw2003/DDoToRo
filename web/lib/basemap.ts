@@ -11,15 +11,25 @@ import type { StyleSpecification } from "maplibre-gl";
  */
 const VWORLD_KEY = process.env.NEXT_PUBLIC_VWORLD_KEY;
 
-/*
-  tiletype 유효값: Base(컬러) / white(백지도) / midnight / Hybrid / Satellite
+// tiletype 유효값: Base(컬러) / white(백지도) / midnight / Hybrid / Satellite
+const vworldTiles = (type: string) =>
+  VWORLD_KEY
+    ? `https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_KEY}/${type}/{z}/{y}/{x}.png`
+    : null;
 
-  Base(컬러)를 쓴다. white는 무채색이라 가격 램프와 충돌이 전혀 없지만,
-  강·도로·지명·시설이 사라져 "내 땅이 어디쯤인지" 알아보기 어렵다는 판단이다.
+/*
+  배경과 도로를 두 레이어로 나눈다.
+
+  Base 한 장에는 배경(육지·물)과 도로·지명이 함께 그려져 있어,
+  배경을 밝히면 도로까지 같이 흐려진다. 래스터라 일부만 골라낼 수 없다.
+
+  Hybrid는 도로·철도·지명·아이콘만 담긴 투명 오버레이다(완전투명 64%).
+  Base를 배경으로 깔고 그 위에 Hybrid를 얹으면,
+  배경은 밝게 누르면서 도로는 선명하게 되살릴 수 있다.
+  배경만 white로 바꾸면 강·산림 색까지 사라져 밋밋해진다.
 */
-const VWORLD_TILES = VWORLD_KEY
-  ? `https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_KEY}/Base/{z}/{y}/{x}.png`
-  : null;
+const VWORLD_TILES = vworldTiles("Base");
+const VWORLD_OVERLAY_TILES = vworldTiles("Hybrid");
 
 // OSM 공식 타일 서버는 사용 정책상 실서비스에 쓸 수 없다. 개발용 폴백이다
 const OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
@@ -42,6 +52,17 @@ export function basemapStyle(): StyleSpecification {
           ? '<a href="https://www.vworld.kr" target="_blank" rel="noreferrer">VWorld</a>'
           : '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>',
       },
+      ...(VWORLD_OVERLAY_TILES
+        ? {
+            roads: {
+              type: "raster" as const,
+              tiles: [VWORLD_OVERLAY_TILES],
+              tileSize: 256,
+              minzoom: 5,
+              maxzoom: 18,
+            },
+          }
+        : {}),
     },
     layers: [
       {
@@ -55,29 +76,47 @@ export function basemapStyle(): StyleSpecification {
             캔버스에 CSS 필터를 걸면 가격 램프 색까지 함께 죽는다.
             반드시 이 레이어의 paint 속성으로 한다.
 
-            컬러 지도는 채도를 살짝만 낮춰 배경이 필지 색을 이기지 않게 한다.
-            완전히 빼면(-1) 지명·도로 구분이 흐려져 컬러로 바꾼 의미가 사라진다.
-            OSM 폴백은 색이 강해 조금 더 눌러준다.
+            누런 육지 배경을 밝은 회백색까지 띄운다.
+            여기서 도로가 흐려지는 것은 상관없다.
+            도로·지명은 위에 얹는 roads 레이어가 다시 그려준다.
           */
-          /*
-            VWorld 육지 배경이 누런 베이지라 그대로 쓰면 화면이 탁하다.
-            채도를 크게 빼고 밝기 하한을 올려 밝은 회백색으로 맞춘다.
-
-            0.52는 도로가 거의 안 보이는 값이며, 그 대가를 알고 고른 값이다.
-            배경 색감은 사실상 축소 화면 전용 설정이다.
-            z15 이상에서는 필지가 화면을 덮어 배경이 거의 보이지 않고,
-            z15 미만에서는 필지를 아예 그리지 않기 때문이다.
-            더 올리면(0.6+) 지명까지 흐려져 지도 구실을 못 한다.
-          */
-          "raster-saturation": usingVWorld ? -0.7 : -0.6,
+          "raster-saturation": usingVWorld ? -0.55 : -0.6,
           "raster-contrast": usingVWorld ? 0 : -0.15,
-          "raster-brightness-min": usingVWorld ? 0.52 : 0.08,
+          "raster-brightness-min": usingVWorld ? 0.46 : 0.08,
           "raster-opacity": 1,
         },
       },
+      // 도로·철도·지명 오버레이. 배경과 독립적으로 색을 조절한다
+      ...(VWORLD_OVERLAY_TILES
+        ? [
+            {
+              id: "roads",
+              type: "raster" as const,
+              source: "roads",
+              paint: {
+                // hue-rotate로 도로 색조를 돌린다 (0=원본 노랑/베이지)
+                "raster-hue-rotate": ROAD_HUE,
+                "raster-saturation": ROAD_SATURATION,
+                "raster-opacity": ROAD_OPACITY,
+              },
+            },
+          ]
+        : []),
     ],
   };
 }
+
+/**
+ * 도로·지명 오버레이 색 조절값.
+ *
+ * 배경과 분리된 레이어라 여기만 바꾸면 도로 색이 바뀐다.
+ *   hue-rotate  0=원본(노랑·베이지) / 40=올리브 / 180=파랑 / -60=분홍
+ *   saturation  -1이면 회색 도로
+ */
+export const ROAD_HUE = 0;
+// 채도를 낮추면 도로가 탁해진다. 원본보다 올려 맑은 베이지·노랑을 살린다
+export const ROAD_SATURATION = 0.3;
+export const ROAD_OPACITY = 1;
 
 /** 양평군 중심. 초기 위치이자 '현재 위치로' 복귀 지점이다. */
 export const YANGPYEONG_CENTER: [number, number] = [127.4874, 37.4917];
