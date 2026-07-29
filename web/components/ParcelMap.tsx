@@ -97,35 +97,52 @@ export default function ParcelMap({ selectedPnu, onSelect, flyTo }: Props) {
         promoteId: "pnu",
       });
 
-      m.addLayer({
-        id: "parcel-fill",
-        type: "fill",
-        source: SRC,
-        paint: {
-          "fill-color": fillColorExpression(),
-          // 밑의 지형이 비쳐야 위치를 파악할 수 있다.
-          // 선택된 필지만 불투명하게 올린다
-          "fill-opacity": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            1,
-            0.72,
-          ],
+      /*
+        필지를 도로·지명 레이어 '아래'에 끼워 넣는다.
+        위에 그리면 필지 색이 지명과 아이콘을 덮어 읽을 수 없게 된다.
+        (OSM 폴백일 때는 roads 레이어가 없으므로 맨 위에 쌓인다)
+      */
+      const beforeId = m.getLayer("roads") ? "roads" : undefined;
+
+      m.addLayer(
+        {
+          id: "parcel-fill",
+          type: "fill",
+          source: SRC,
+          paint: {
+            "fill-color": fillColorExpression(),
+            // 밑의 지형이 비쳐야 위치를 파악할 수 있다.
+            // 선택된 필지만 불투명하게 올린다
+            "fill-opacity": [
+              "case",
+              ["boolean", ["feature-state", "selected"], false],
+              1,
+              0.72,
+            ],
+          },
         },
-      });
+        beforeId,
+      );
 
       // 경계선은 흰색이다. 먹선으로 하면 축소 시 화면이 새까매진다
-      m.addLayer({
-        id: "parcel-line",
-        type: "line",
-        source: SRC,
-        paint: {
-          "line-color": "#FFFFFF",
-          "line-width": 0.5,
+      m.addLayer(
+        {
+          id: "parcel-line",
+          type: "line",
+          source: SRC,
+          paint: {
+            "line-color": "#FFFFFF",
+            "line-width": 0.5,
+          },
         },
-      });
+        beforeId,
+      );
 
-      // 선택과 호버는 색이 아니라 먹선 굵기로 표현한다
+      /*
+        선택과 호버는 색이 아니라 먹선 굵기로 표현한다.
+        이 레이어만 도로 '위'에 둔다. 2px 얇은 선이라 지명을 가리지 않고,
+        지금 어느 필지를 보고 있는지는 도로에 묻히면 안 되는 정보다.
+      */
       m.addLayer({
         id: "parcel-outline",
         type: "line",
