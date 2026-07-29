@@ -1,15 +1,56 @@
-.DS_Store
+# --- 비밀키 ---
+# 실거래가 API 키가 들어간다. .env.example만 예외로 커밋한다
+.env
+.env.*
+!.env.example
 
-# etl
+# --- 원본 지리정보 데이터 ---
+# 국가공간정보포털 개별공시지가 SHP. 경기도 전체 약 9GB
+AL_D150_*/
 etl/data/
 etl/out/
+
+# shapefile 일체 (부속 파일 포함)
+*.shp
+*.shx
+*.dbf
+*.prj
+*.fix
+*.cpg
+*.qix
+*.sbn
+*.sbx
+*.qpj
+
+# 기타 대용량 지리 포맷
+*.gpkg
+*.mbtiles
+*.pmtiles
+
+# --- Python ---
+venv/
+.venv/
 __pycache__/
-*.pyc
+*.py[cod]
+.pytest_cache/
+*.egg-info/
 
-# web (Next.js)
-web/node_modules/
-web/.next/
-web/.env*.local
+# --- Next.js / Node ---
+node_modules/
+.next/
+web/out/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
 
-# env
-.env
+# --- 로그 ---
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# --- OS / 에디터 ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

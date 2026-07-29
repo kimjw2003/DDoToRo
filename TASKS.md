@@ -36,7 +36,10 @@ Task는 순서대로 진행한다. **각 Task의 완료 조건(DoD)을 충족하
 **목표**: 양평군 필지가 좌표와 가격을 갖고 DB에 들어간다.
 
 **할 일**
-1. `docker-compose.yml` 작성 (postgis/postgis:16-3.4, 볼륨 영속화, 포트 5432)
+1. `docker-compose.yml` 작성 (`imresamu/postgis:16-3.5`, 볼륨 영속화, 포트 5432)
+
+   공식 `postgis/postgis`는 **amd64 전용**이라 Apple Silicon에서 네이티브 구동이 안 된다.
+   `imresamu/postgis`는 공식 Dockerfile을 multi-arch(arm64 포함)로 빌드한 이미지다.
 2. 스키마 작성 — Task 1 결과를 반영해 실제 컬럼에 맞출 것
 
 ```sql
@@ -167,7 +170,7 @@ CREATE TABLE land_trade (
 2. 검색 결과 클릭 시 지도가 해당 필지로 이동하고 선택 상태가 된다
 3. `/land/[pnu]` 서버 사이드 렌더링 페이지
    - 필지 정보 전체를 HTML로 렌더 (SEO)
-   - `<title>`: `경기 양평군 서종면 245-7 공시지가 - {서비스명}`
+   - `<title>`: `경기 양평군 서종면 245-7 공시지가 - DDoToRo`
    - `<meta description>`에 총액과 면적 포함
    - JSON-LD `Place` 구조화 데이터
    - 지도로 돌아가는 링크

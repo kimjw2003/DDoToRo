@@ -82,7 +82,7 @@ GET http://apis.data.go.kr/1613000/RTMSDataSvcLandTrade/getRTMSDataSvcLandTrade
 
 | 영역 | 선택 |
 |---|---|
-| DB | PostgreSQL 16 + PostGIS 3 (Docker Compose) |
+| DB | PostgreSQL 16 + PostGIS 3 (Docker Compose, `imresamu/postgis:16-3.5`) |
 | ETL | Python 3.11 (GeoPandas, pandas, psycopg) |
 | 백엔드 | Next.js API Routes (별도 서버 없음) |
 | 프론트 | Next.js 15 App Router + TypeScript |
