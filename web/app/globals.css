@@ -164,10 +164,121 @@ body {
 }
 
 /*
+  토글.
+
+  켜짐은 강조색(--accent)으로 채운다. 주 버튼과 같은 색이며 램프 최상단과 같은
+  색족이라 화면의 색 이야기는 여전히 하나다.
+  이 시스템에서 둥근 형태를 쓰는 유일한 요소다 — 손으로 미는 물리 스위치의 관용
+  형태이고, 각진 요소들 사이에서 "이건 눌러 바꾸는 것"이라는 신호가 된다.
+
+  값은 design/assets/tokens.css를 그대로 옮긴 것이다. 다시 정하지 말 것.
+*/
+.switch {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 30px;
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  background: var(--ink-mid);
+  border-radius: 50%;
+  transition: transform 140ms ease, background 140ms ease;
+}
+
+.switch:hover {
+  border-color: var(--ink);
+}
+
+.switch:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.switch:checked:hover {
+  background: var(--accent-ink);
+  border-color: var(--accent-ink);
+}
+
+.switch:checked::after {
+  transform: translateX(22px);
+  background: var(--surface);
+}
+
+.switch:disabled {
+  background: var(--sunken);
+  border-color: var(--line);
+  cursor: not-allowed;
+}
+
+.switch:disabled::after {
+  background: var(--line);
+}
+
+/* 토글은 라벨과 한 행을 이룬다. 행 전체가 클릭 영역이다 */
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-height: 44px;
+  padding: 12px 0;
+  cursor: pointer;
+}
+
+.switch-row > .switch-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.switch-label {
+  display: block;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+/* 라벨만으로 "끄면 무엇이 사라지는지" 알 수 없으면 반드시 붙인다 */
+.switch-help {
+  display: block;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-mid);
+  margin-top: 2px;
+}
+
+.switch-row:has(.switch:disabled) {
+  cursor: not-allowed;
+}
+
+.switch-row:has(.switch:disabled) .switch-label,
+.switch-row:has(.switch:disabled) .switch-help {
+  color: var(--ink-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .switch::after {
+    transition-duration: 0ms;
+  }
+}
+
+/*
   2분할 세그먼트.
 
-  값이 둘 다 이름을 가질 때는 토글 대신 이것을 쓴다 (평 / ㎡, 막대 / 선).
-  토글은 "끔"이 무엇인지 라벨 하나로 유추해야 하므로 켬·끔이 명확한 경우에만 쓴다.
+  값이 둘 다 이름을 가질 때 쓴다 (평 / ㎡).
   버튼 계열이라 각진 채로 둔다 — 라운드는 토글에만 허용된 예외다.
 */
 .seg {

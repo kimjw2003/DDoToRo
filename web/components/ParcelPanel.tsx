@@ -277,9 +277,10 @@ function PriceTab({ parcel }: { parcel: ParcelDetail }) {
                 공시지가 추이
               </h3>
               <span className="badge">{history.length}년</span>
-              <ChartToggle mode={chartMode} onChange={setChartMode} />
             </div>
             <PriceChart history={history} mode={chartMode} />
+            {/* 토글은 라벨과 한 행을 이룬다. 행 전체가 클릭 영역이다 */}
+            <ChartToggle mode={chartMode} onChange={setChartMode} />
           </section>
         )
       )}
@@ -388,9 +389,9 @@ function LineOverlay({
 /**
  * 막대 ↔ 선 전환.
  *
- * 토글이 아니라 2분할 세그먼트다 — 양쪽이 모두 이름을 가진 값이기 때문이다.
- * 토글은 "끔"이 무엇인지 라벨 하나로 유추해야 하므로 켬·끔이 명확할 때만 쓴다.
- * 규격은 DESIGN.md의 .seg / .seg-btn을 그대로 따른다.
+ * 규격은 DESIGN.md의 .switch / .switch-row를 그대로 따른다.
+ * 켜고 끄는 순간 바로 반영되므로 확인 버튼이 없는 토글이 맞고,
+ * 라벨만으로 "끄면 무엇이 되는지" 알 수 없어 보조 설명을 붙였다.
  */
 function ChartToggle({
   mode,
@@ -399,25 +400,20 @@ function ChartToggle({
   mode: ChartMode;
   onChange: (m: ChartMode) => void;
 }) {
-  const items: { id: ChartMode; label: string }[] = [
-    { id: "bar", label: "막대" },
-    { id: "line", label: "선" },
-  ];
-
   return (
-    <div className="seg ml-auto" role="group" aria-label="차트 종류">
-      {items.map((it) => (
-        <button
-          key={it.id}
-          type="button"
-          className="seg-btn"
-          aria-pressed={mode === it.id}
-          onClick={() => onChange(it.id)}
-        >
-          {it.label}
-        </button>
-      ))}
-    </div>
+    <label className="switch-row">
+      <span className="switch-text">
+        <span className="switch-label">선 그래프</span>
+        <span className="switch-help">끄면 막대로 표시합니다</span>
+      </span>
+      <input
+        className="switch"
+        type="checkbox"
+        role="switch"
+        checked={mode === "line"}
+        onChange={(e) => onChange(e.target.checked ? "line" : "bar")}
+      />
+    </label>
   );
 }
 
