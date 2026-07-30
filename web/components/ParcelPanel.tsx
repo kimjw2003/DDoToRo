@@ -584,12 +584,25 @@ function CategoryIcon({ kind }: { kind: string }) {
   );
 }
 
-/** 직선 1.8km (차 5분 추정) — 도보 시간은 쓰지 않는다 */
-function distanceText(m: number): string {
+/** 걸어갈 만한 거리에서만 도보를 병기한다. 그 위로는 숫자가 무의미해진다 */
+const WALKABLE_M = 2000;
+
+/**
+ * 소요시간 추정.
+ *
+ * 직선거리에서 환산한 값이라 실제 도로와 다르다 — 그래서 "추정"을 뗄 수 없다.
+ * 도보는 2km 이하에서만 보여준다. 서종면처럼 강과 산을 사이에 둔 6km 거리를
+ * "도보 95분"이라 적으면 걸어갈 수 있다는 뜻으로 읽힌다.
+ */
+function timeText(m: number): string {
   const km = m / 1000;
-  // 시골 국도 기준 대략 35km/h로 잡는다. 어디까지나 추정이라 문구로 밝힌다
-  const min = Math.max(1, Math.round((km / 35) * 60));
-  return `${km.toFixed(1)}km · 차 ${min}분 추정`;
+  // 시골 국도 35km/h, 보행 4km/h
+  const car = Math.max(1, Math.round((km / 35) * 60));
+  if (m <= WALKABLE_M) {
+    const walk = Math.max(1, Math.round((km / 4) * 60));
+    return `차 ${car}분 · 도보 ${walk}분 추정`;
+  }
+  return `차 ${car}분 추정`;
 }
 
 function NearTab({ parcel }: { parcel: ParcelDetail }) {
@@ -618,9 +631,15 @@ function NearTab({ parcel }: { parcel: ParcelDetail }) {
                   <p className="text-[16px] text-[var(--ink)]">{s.name}</p>
                   <p className="text-[14px] text-[var(--ink-mid)]">{s.line}</p>
                 </div>
-                <p className="tnum shrink-0 text-right text-[14px] text-[var(--ink-mid)]">
-                  {distanceText(s.distance_m)}
-                </p>
+                {/* 직선거리가 주 표기, 소요시간은 보조다 */}
+                <div className="shrink-0 text-right">
+                  <p className="tnum text-[16px] leading-[1.3] text-[var(--ink)]">
+                    {(s.distance_m / 1000).toFixed(1)}km
+                  </p>
+                  <p className="tnum text-[14px] leading-[1.3] text-[var(--ink-mid)]">
+                    {timeText(s.distance_m)}
+                  </p>
+                </div>
               </li>
             ))}
           </ul>
