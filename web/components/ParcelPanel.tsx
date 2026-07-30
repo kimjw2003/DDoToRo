@@ -252,9 +252,13 @@ function InfoTab({ parcel }: { parcel: ParcelDetail }) {
   );
 }
 
+type ChartMode = "bar" | "line";
+
 function PriceTab({ parcel }: { parcel: ParcelDetail }) {
   const history = parcel.price_history ?? [];
   const trade = parcel.emd_trade_avg;
+  // 막대는 연도별 크기 비교에, 선은 흐름 파악에 유리하다. 둘 다 쓰게 둔다
+  const [chartMode, setChartMode] = useState<ChartMode>("bar");
 
   return (
     <>
@@ -273,8 +277,9 @@ function PriceTab({ parcel }: { parcel: ParcelDetail }) {
                 공시지가 추이
               </h3>
               <span className="badge">{history.length}년</span>
+              <ChartToggle mode={chartMode} onChange={setChartMode} />
             </div>
-            <PriceChart history={history} />
+            <PriceChart history={history} mode={chartMode} />
           </section>
         )
       )}
@@ -325,16 +330,107 @@ function PriceTab({ parcel }: { parcel: ParcelDetail }) {
 }
 
 /**
- * 연도별 공시지가 막대 차트.
+ * 꼭짓점을 잇는 선.
  *
- * SVG 텍스트로 그리지 않는다 — viewBox가 줄면 글자도 같이 줄어 14px 하한이 깨진다.
- * 막대만 비율로 그리고 라벨은 HTML로 둔다. 연도 수는 배열 길이를 따라가므로
- * 5년이든 10년이든 그대로 동작한다.
+ * 각 열이 flex로 균등 분배되므로 x는 열 중앙(= (i+0.5)/n)이고,
+ * y는 막대 높이와 같은 계산을 쓴다. 두 모드의 점 위치가 어긋나지 않는다.
+ * preserveAspectRatio="none"으로 늘리므로 선 두께는 non-scaling-stroke로 고정한다.
+ */
+function LineOverlay({
+  history,
+  liftOf,
+  height,
+}: {
+  history: { year: number; price_per_sqm: number | null }[];
+  liftOf: (v: number) => number;
+  height: number;
+}) {
+  const n = history.length;
+  const pts = history
+    .map((h, i) =>
+      h.price_per_sqm === null
+        ? null
+        : {
+            x: ((i + 0.5) / n) * 100,
+            // 점(HTML)은 바닥 기준 높이를 쓰므로 y로 뒤집는다
+            y: height - liftOf(h.price_per_sqm),
+          },
+    )
+    .filter((p): p is { x: number; y: number } => p !== null);
+
+  if (pts.length < 2) return null;
+
+  return (
+    <svg
+      // 라벨 아래, 연도 위. 막대가 차지하던 영역과 정확히 겹친다
+      className="pointer-events-none absolute inset-x-0 bottom-[22px]"
+      style={{ height }}
+      viewBox={`0 0 100 ${height}`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <polyline
+        points={pts.map((p) => `${p.x},${p.y}`).join(" ")}
+        fill="none"
+        stroke={RAMP[3]}
+        strokeWidth={2}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
+/** 막대 ↔ 선 전환. 색으로 선택을 표시하지 않는다 */
+function ChartToggle({
+  mode,
+  onChange,
+}: {
+  mode: ChartMode;
+  onChange: (m: ChartMode) => void;
+}) {
+  const items: { id: ChartMode; label: string }[] = [
+    { id: "bar", label: "막대" },
+    { id: "line", label: "선" },
+  ];
+  return (
+    <div className="ml-auto flex border border-[var(--line)]">
+      {items.map((it) => {
+        const on = mode === it.id;
+        return (
+          <button
+            key={it.id}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onChange(it.id)}
+            className={`min-h-[44px] px-3 text-[14px] ${
+              on
+                ? "bg-[var(--sunken)] font-semibold text-[var(--ink)]"
+                : "text-[var(--ink-mid)] hover:text-[var(--ink)]"
+            }`}
+          >
+            {it.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * 연도별 공시지가 차트.
+ *
+ * 값·연도 라벨을 SVG 텍스트로 그리지 않는다 — viewBox가 줄면 글자도 같이 줄어
+ * 14px 하한이 깨진다. 라벨은 HTML로 두고 그래픽만 비율로 그린다.
+ * 연도 수는 배열 길이를 따라가므로 5년이든 10년이든 그대로 동작한다.
  */
 function PriceChart({
   history,
+  mode,
 }: {
   history: { year: number; price_per_sqm: number | null }[];
+  mode: ChartMode;
 }) {
   const values = history
     .map((h) => h.price_per_sqm)
@@ -342,6 +438,21 @@ function PriceChart({
   if (values.length === 0) return null;
 
   const max = Math.max(...values);
+  const min = Math.min(...values);
+
+  /*
+    막대는 0부터 재고, 선은 값 범위에 맞춰 확대한다.
+
+    공시지가는 해마다 몇 퍼센트씩만 움직인다. 선까지 0부터 그리면 다섯 점이
+    상단 4px 안에 겹쳐 추세가 전혀 보이지 않는다. 막대는 크기 비교가 목적이라
+    0 기준을 지키고, 선은 흐름을 보는 것이므로 범위를 늘린다.
+  */
+  const CHART_H = 108;
+  const PAD = 10;
+  const span = max - min || 1;
+  const liftOf = (v: number) =>
+    PAD + ((v - min) / span) * (CHART_H - PAD * 2);
+
   const first = history.find((h) => h.price_per_sqm !== null);
   const last = [...history].reverse().find((h) => h.price_per_sqm !== null);
   const delta =
@@ -351,26 +462,52 @@ function PriceChart({
 
   return (
     <>
-      <div className="flex h-[150px] items-end gap-1.5">
+      {/* 그래픽 높이는 두 모드가 같아야 전환할 때 화면이 튀지 않는다 */}
+      <div className="relative flex h-[150px] items-end gap-1.5">
+        {mode === "line" && (
+          <LineOverlay history={history} liftOf={liftOf} height={CHART_H} />
+        )}
+
         {history.map((h, i) => {
           const v = h.price_per_sqm;
           const isLast = i === history.length - 1;
+          // 막대는 0 기준, 선은 값 범위를 확대한 위치를 쓴다
+          const barH =
+            v === null
+              ? 4
+              : mode === "line"
+                ? liftOf(v)
+                : Math.max(6, (v / max) * CHART_H);
           return (
             <div
               key={h.year}
-              className="flex min-w-0 flex-1 flex-col items-center justify-end"
+              className="relative flex min-w-0 flex-1 flex-col items-center justify-end"
             >
               <span className="tnum mb-1 text-[14px] leading-none text-[var(--ink-mid)]">
                 {v === null ? "—" : Math.round(v / 1000).toLocaleString()}
               </span>
-              <div
-                className="w-full"
-                style={{
-                  // 최솟값도 막대가 보이도록 바닥을 깔아준다
-                  height: v === null ? 4 : `${Math.max(6, (v / max) * 108)}px`,
-                  backgroundColor: isLast ? RAMP[4] : RAMP[2],
-                }}
-              />
+
+              {mode === "bar" ? (
+                <div
+                  className="w-full"
+                  style={{
+                    // 최솟값도 막대가 보이도록 바닥을 깔아준다
+                    height: `${barH}px`,
+                    backgroundColor: isLast ? RAMP[4] : RAMP[2],
+                  }}
+                />
+              ) : (
+                // 선 모드에서는 같은 높이만 차지하고 꼭짓점만 찍는다
+                <div className="relative w-full" style={{ height: `${barH}px` }}>
+                  {v !== null && (
+                    <span
+                      className="absolute left-1/2 top-0 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[var(--surface)]"
+                      style={{ backgroundColor: isLast ? RAMP[4] : RAMP[3] }}
+                    />
+                  )}
+                </div>
+              )}
+
               <span className="tnum mt-1.5 text-[14px] leading-none text-[var(--ink-mid)]">
                 {h.year}
               </span>
