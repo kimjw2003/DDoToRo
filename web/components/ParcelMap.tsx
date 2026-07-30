@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 // maplibre-gl 6은 default export가 없다. named export만 쓴다
 import {
   MapLibreMap,
+  Marker,
   NavigationControl,
   setWorkerUrl,
   type GeoJSONSource,
@@ -32,7 +33,7 @@ import {
   MIN_PARCEL_ZOOM,
   YANGPYEONG_CENTER,
 } from "@/lib/basemap";
-import { fillColorExpression, hatchImage } from "@/lib/priceRamp";
+import { fillColorExpression, hatchImage, RAMP } from "@/lib/priceRamp";
 
 const SRC = "parcels";
 const DEBOUNCE_MS = 300;
@@ -43,6 +44,16 @@ const DEBOUNCE_MS = 300;
   하나만 넣으면 가격 정보가 없는 필지를 클릭할 수 없다.
 */
 const PICK_LAYERS = ["parcel-fill", "parcel-fill-none"];
+
+/* 멀리서 보면 읍면 칩 12개가 서로 겹쳐 읽을 수 없다. 한 덩어리로 묶는다 */
+const COUNTY_ZOOM = 12.5;
+
+export type ChipLevel = "parcel" | "town" | "county";
+
+function levelFor(zoom: number): ChipLevel {
+  if (zoom >= MIN_PARCEL_ZOOM) return "parcel";
+  return zoom < COUNTY_ZOOM ? "county" : "town";
+}
 
 export type ParcelProps = {
   pnu: string;
@@ -60,13 +71,108 @@ type Props = {
   onSelect: (pnu: string | null) => void;
   /** 지도가 선택 필지로 이동해야 할 때 쓴다 (검색 결과 등) */
   flyTo?: { lng: number; lat: number } | null;
+  /** 범례를 줌 구간에 맞춰 바꾸려면 필요하다 */
+  onLevelChange?: (level: ChipLevel) => void;
 };
 
-export default function ParcelMap({ selectedPnu, onSelect, flyTo }: Props) {
+type Town = {
+  emd: string;
+  lng: number;
+  lat: number;
+  median_price_per_sqm: number | null;
+  deal_count: number;
+  step: number;
+};
+
+type County = {
+  name: string;
+  lng: number;
+  lat: number;
+  median_price_per_sqm: number | null;
+  deal_count: number;
+};
+
+const PYEONG = 3.3058;
+
+/** 평당 만원. 일반인은 평으로 사고하므로 칩에 ㎡당은 쓰지 않는다 */
+function pyeongMan(perSqm: number | null): string {
+  if (perSqm === null) return "—";
+  return Math.round((perSqm * PYEONG) / 10_000).toLocaleString();
+}
+
+/**
+ * 지도 위 시세 칩.
+ *
+ * 왼쪽 색 띠가 가격 단계다 — 채도는 가격만 뜻한다는 원칙이 여기에도 적용된다.
+ * 값을 크게, 단위를 작게 두어 숫자가 먼저 읽히게 한다.
+ * Marker로 그리므로 줌과 무관하게 화면상 크기가 일정하다.
+ */
+function priceChip(opts: {
+  name: string;
+  perSqm: number | null;
+  deals: number;
+  step: number;
+  large?: boolean;
+}): HTMLElement {
+  const { name, perSqm, deals, step, large = false } = opts;
+
+  const el = document.createElement("div");
+  el.className =
+    "flex items-stretch overflow-hidden border border-[var(--line-strong)] bg-[var(--surface)]";
+
+  // 가격 단계를 색 띠로. 값을 읽기 전에 어느 정도인지 먼저 보인다
+  const bar = document.createElement("div");
+  bar.className = large ? "w-1.5" : "w-1";
+  bar.style.backgroundColor = RAMP[Math.min(RAMP.length - 1, Math.max(0, step))];
+
+  const body = document.createElement("div");
+  body.className = large ? "px-3.5 py-2" : "px-3 py-1.5";
+
+  const head = document.createElement("div");
+  head.className =
+    "flex items-baseline gap-1.5 text-[14px] leading-[1.2] text-[var(--ink-mid)]";
+  const nameEl = document.createElement("span");
+  nameEl.className = "font-medium text-[var(--ink)]";
+  nameEl.textContent = name;
+  const dealsEl = document.createElement("span");
+  dealsEl.className = "tnum";
+  dealsEl.textContent = `${deals.toLocaleString()}건`;
+  head.append(nameEl, dealsEl);
+
+  const priceRow = document.createElement("div");
+  priceRow.className = "flex items-baseline gap-1";
+  const value = document.createElement("span");
+  value.className = `tnum font-serif-num leading-[1.15] text-[var(--ink)] ${
+    large ? "text-[28px]" : "text-[20px]"
+  }`;
+  value.textContent = pyeongMan(perSqm);
+  const unit = document.createElement("span");
+  unit.className = "text-[14px] leading-[1.2] text-[var(--ink-mid)]";
+  unit.textContent = "만원 / 평";
+  priceRow.append(value, unit);
+
+  body.append(head, priceRow);
+  el.append(bar, body);
+  return el;
+}
+
+export default function ParcelMap({
+  selectedPnu,
+  onSelect,
+  flyTo,
+  onLevelChange,
+}: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abort = useRef<AbortController | null>(null);
+  const chips = useRef<Marker[]>([]);
+  const towns = useRef<Town[] | null>(null);
+  const county = useRef<County | null>(null);
+  const chipLevel = useRef<ChipLevel | null>(null);
+  // 콜백이 바뀌어도 지도를 다시 만들지 않도록 ref로 들고 있는다
+  const onLevelRef = useRef(onLevelChange);
+  onLevelRef.current = onLevelChange;
 
   const [tooFar, setTooFar] = useState(false);
   const [truncated, setTruncated] = useState(false);
@@ -232,6 +338,9 @@ export default function ParcelMap({ selectedPnu, onSelect, flyTo }: Props) {
     });
 
     return () => {
+      chips.current.forEach((mk) => mk.remove());
+      chips.current = [];
+      chipLevel.current = null;
       m.remove();
       map.current = null;
     };
@@ -244,12 +353,85 @@ export default function ParcelMap({ selectedPnu, onSelect, flyTo }: Props) {
     timer.current = setTimeout(() => load(m), DEBOUNCE_MS);
   }
 
+  /**
+   * 줌에 맞춰 시세 칩을 바꾼다.
+   *
+   *   z15 이상   필지 폴리곤
+   *   z12.5~15   읍면 12개
+   *   z12.5 미만 시군구 한 덩어리 — 멀리서 보면 읍면 칩이 서로 겹쳐 읽을 수 없다
+   */
+  async function syncChips(m: MapLibreMap, level: ChipLevel) {
+    if (level === chipLevel.current) return;
+
+    if (level === "parcel") {
+      chipLevel.current = level;
+      chips.current.forEach((mk) => mk.remove());
+      chips.current = [];
+      return;
+    }
+
+    if (!towns.current) {
+      try {
+        const res = await fetch("/api/towns");
+        if (!res.ok) return;
+        const json = await res.json();
+        towns.current = json.towns as Town[];
+        county.current = json.county as County;
+      } catch {
+        return;
+      }
+    }
+    // 응답을 기다리는 사이 줌이 또 바뀌었을 수 있다
+    if (levelFor(m.getZoom()) !== level) return;
+
+    chipLevel.current = level;
+    chips.current.forEach((mk) => mk.remove());
+
+    if (level === "county") {
+      const c = county.current;
+      chips.current = c
+        ? [
+            new Marker({
+              element: priceChip({
+                name: c.name,
+                perSqm: c.median_price_per_sqm,
+                deals: c.deal_count,
+                step: 2,
+                large: true,
+              }),
+            })
+              .setLngLat([c.lng, c.lat])
+              .addTo(m),
+          ]
+        : [];
+      return;
+    }
+
+    chips.current = (towns.current ?? []).map((t) =>
+      new Marker({
+        element: priceChip({
+          name: t.emd,
+          perSqm: t.median_price_per_sqm,
+          deals: t.deal_count,
+          step: t.step,
+        }),
+      })
+        .setLngLat([t.lng, t.lat])
+        .addTo(m),
+    );
+  }
+
   async function load(m: MapLibreMap) {
     const zoom = m.getZoom();
     const src = m.getSource(SRC) as GeoJSONSource | undefined;
     if (!src) return;
 
-    if (zoom < MIN_PARCEL_ZOOM) {
+    const level = levelFor(zoom);
+    const zoomedOut = level !== "parcel";
+    onLevelRef.current?.(level);
+    void syncChips(m, level);
+
+    if (zoomedOut) {
       setTooFar(true);
       setTruncated(false);
       setFailed(false);

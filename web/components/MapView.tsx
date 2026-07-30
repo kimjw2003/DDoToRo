@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import ParcelMap from "@/components/ParcelMap";
+import ParcelMap, { type ChipLevel } from "@/components/ParcelMap";
 import ParcelPanel, { type ParcelDetail } from "@/components/ParcelPanel";
 import Legend from "@/components/Legend";
 import SearchBox, { type SearchHit } from "@/components/SearchBox";
@@ -77,6 +77,9 @@ export default function MapView() {
       s === "collapsed" ? "middle" : s === "middle" ? "expanded" : "collapsed",
     );
 
+  // 범례를 줌 구간에 맞춰 바꾸기 위해 지도가 알려준다
+  const [level, setLevel] = useState<ChipLevel>("parcel");
+
   // 검색 결과를 고르면 지도를 그 필지로 옮기고 선택 상태로 만든다
   const [flyTo, setFlyTo] = useState<{ lng: number; lat: number } | null>(null);
   const handlePick = useCallback(
@@ -127,6 +130,7 @@ export default function MapView() {
           selectedPnu={selectedPnu}
           onSelect={handleSelect}
           flyTo={flyTo}
+          onLevelChange={setLevel}
         />
 
         {/*
@@ -142,7 +146,7 @@ export default function MapView() {
             { "--legend-bottom": `calc(${SNAP[snap]} + 16px)` } as React.CSSProperties
           }
         >
-          <Legend />
+          <Legend level={level} />
         </div>
       </div>
 
