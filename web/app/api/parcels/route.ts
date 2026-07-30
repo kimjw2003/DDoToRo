@@ -11,11 +11,24 @@ type Row = {
   ri: string | null;
   jibun: string | null;
   jimok: string | null;
-  area_sqm: string | null;
-  price_per_sqm: string | null;
+  area_sqm: number | null;
+  price_per_sqm: number | null;
   price_year: number | null;
   geometry: string;
 };
+
+/*
+  경계상자 조회의 하한 여백(도).
+
+  `minx <= 화면동단` 하나만 걸면 화면 서쪽의 모든 필지가 후보가 되어 인덱스가
+  무의미해진다(실측 139ms). minx에 하한을 주면 범위 스캔이 좁아져 13ms로 떨어진다.
+
+  값은 적재된 필지의 실제 최대 크기에서 왔다 — 폭 0.0862도, 높이 0.1219도.
+  이보다 작게 잡으면 큰 임야 필지가 조용히 누락된다. 넉넉히 반올림해 둔다.
+    SELECT max(maxx-minx), max(maxy-miny) FROM parcel;
+*/
+const BBOX_MARGIN_LNG = 0.09;
+const BBOX_MARGIN_LAT = 0.13;
 
 function parseBbox(raw: string | null) {
   if (!raw) return null;
@@ -54,15 +67,25 @@ export async function GET(request: Request) {
     );
   }
 
-  // && 는 bounding box 교차 연산자로 GIST 인덱스를 탄다.
-  // 상한보다 1건 더 받아 잘렸는지 판별한다
+  /*
+    경계상자 교차.
+
+    두 상자가 겹치려면 `내 시작 <= 상대 끝` 이고 `내 끝 >= 상대 시작` 이면 된다.
+    앞쪽 조건에 BBOX_MARGIN으로 하한을 더해 idx_parcel_bbox의 범위 스캔을 좁힌다.
+    상한보다 1건 더 받아 잘렸는지 판별한다.
+  */
   const rows = await query<Row>(
     `SELECT pnu, emd, ri, jibun, jimok, area_sqm, price_per_sqm, price_year,
-            ST_AsGeoJSON(geom) AS geometry
+            geojson AS geometry
        FROM parcel
-      WHERE geom && ST_MakeEnvelope($1, $2, $3, $4, 4326)
-      LIMIT $5`,
-    [bbox.minLng, bbox.minLat, bbox.maxLng, bbox.maxLat, MAX_FEATURES + 1],
+      WHERE minx BETWEEN ? AND ? AND maxx >= ?
+        AND miny BETWEEN ? AND ? AND maxy >= ?
+      LIMIT ?`,
+    [
+      bbox.minLng - BBOX_MARGIN_LNG, bbox.maxLng, bbox.minLng,
+      bbox.minLat - BBOX_MARGIN_LAT, bbox.maxLat, bbox.minLat,
+      MAX_FEATURES + 1,
+    ],
   );
 
   const truncated = rows.length > MAX_FEATURES;
@@ -80,9 +103,8 @@ export async function GET(request: Request) {
         ri: r.ri,
         jibun: r.jibun,
         jimok: r.jimok,
-        // NUMERIC/BIGINT는 pg가 정밀도 보존을 위해 문자열로 준다. 숫자로 바꿔 내려보낸다
-        area_sqm: r.area_sqm === null ? null : Number(r.area_sqm),
-        price_per_sqm: r.price_per_sqm === null ? null : Number(r.price_per_sqm),
+        area_sqm: r.area_sqm,
+        price_per_sqm: r.price_per_sqm,
         price_year: r.price_year,
       },
     })),

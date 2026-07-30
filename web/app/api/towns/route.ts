@@ -5,19 +5,19 @@ type TownRow = {
   sigungu_cd: string;
   sigungu: string | null;
   emd: string;
-  lng: string;
-  lat: string;
-  median_price_per_sqm: string | null;
-  deal_count: string;
+  lng: number;
+  lat: number;
+  median_price_per_sqm: number | null;
+  deal_count: number;
 };
 
 type CountyRow = {
   sigungu_cd: string;
   name: string;
-  lng: string;
-  lat: string;
-  median_price_per_sqm: string | null;
-  deal_count: string;
+  lng: number;
+  lat: number;
+  median_price_per_sqm: number | null;
+  deal_count: number;
 };
 
 export type Town = {
@@ -91,47 +91,39 @@ export async function GET() {
     /*
       시군구.
 
-      읍면동 중앙값의 평균이 아니라 거래 전체에서 다시 구한다.
+      읍면동 중앙값의 평균이 아니라 거래 전체에서 다시 구한 값이다.
       읍면동마다 거래 수가 크게 달라 중앙값의 평균은 표본이 적은 동네에
       같은 무게를 주게 되고, 그러면 시 전체 시세가 실제와 어긋난다.
+
+      SQLite에는 percentile_cont가 없어 적재 시점에 계산해 두었다
+      (etl/export_sqlite.py의 sigungu_trade_avg).
     */
     const countyRows = await query<CountyRow>(
       `SELECT r.sigungu_cd, r.name, r.lng, r.lat,
               d.median_price_per_sqm, d.deal_count
          FROM region_summary r
-         JOIN (
-           SELECT sigungu_cd,
-                  count(*) AS deal_count,
-                  round(percentile_cont(0.5) WITHIN GROUP (
-                    ORDER BY deal_amount / NULLIF(area_sqm, 0))::numeric)
-                    AS median_price_per_sqm
-             FROM land_trade
-            WHERE area_sqm > 0 AND coalesce(cancel_type, '') = ''
-            GROUP BY sigungu_cd
-         ) d ON d.sigungu_cd = r.sigungu_cd
+         JOIN sigungu_trade_avg d ON d.sigungu_cd = r.sigungu_cd
         WHERE r.level = 'sigungu'
         ORDER BY r.name`,
     );
 
     const townBase = townRows.map((r) => ({
-      sigungu_cd: r.sigungu_cd.trim(),
+      sigungu_cd: r.sigungu_cd,
       sigungu: r.sigungu,
       emd: r.emd,
-      lng: Number(r.lng),
-      lat: Number(r.lat),
-      median_price_per_sqm:
-        r.median_price_per_sqm === null ? null : Number(r.median_price_per_sqm),
-      deal_count: Number(r.deal_count),
+      lng: r.lng,
+      lat: r.lat,
+      median_price_per_sqm: r.median_price_per_sqm,
+      deal_count: r.deal_count,
     }));
 
     const countyBase = countyRows.map((r) => ({
-      sigungu_cd: r.sigungu_cd.trim(),
+      sigungu_cd: r.sigungu_cd,
       name: r.name,
-      lng: Number(r.lng),
-      lat: Number(r.lat),
-      median_price_per_sqm:
-        r.median_price_per_sqm === null ? null : Number(r.median_price_per_sqm),
-      deal_count: Number(r.deal_count),
+      lng: r.lng,
+      lat: r.lat,
+      median_price_per_sqm: r.median_price_per_sqm,
+      deal_count: r.deal_count,
     }));
 
     /*
