@@ -362,8 +362,11 @@ function LineOverlay({
 
   return (
     <svg
-      // 라벨 아래, 연도 위. 막대가 차지하던 영역과 정확히 겹친다
-      className="pointer-events-none absolute inset-x-0 bottom-[22px]"
+      /*
+        라벨 아래, 연도 위. 막대가 차지하던 영역과 정확히 겹친다.
+        w-full이 없으면 SVG가 기본 폭(300px)으로 렌더되어 선이 왼쪽에만 그려진다.
+      */
+      className="pointer-events-none absolute inset-x-0 bottom-[22px] w-full"
       style={{ height }}
       viewBox={`0 0 100 ${height}`}
       preserveAspectRatio="none"
@@ -382,7 +385,13 @@ function LineOverlay({
   );
 }
 
-/** 막대 ↔ 선 전환. 색으로 선택을 표시하지 않는다 */
+/**
+ * 막대 ↔ 선 전환.
+ *
+ * 글자 대신 1.7px 단선 아이콘으로 표시한다 — 카테고리에 색을 배정하지 않는다는
+ * 원칙에 맞추고, 차트 제목 옆에서 시선을 덜 가져간다.
+ * 아이콘만 두더라도 aria-label로 무엇인지 읽히게 한다.
+ */
 function ChartToggle({
   mode,
   onChange,
@@ -390,10 +399,29 @@ function ChartToggle({
   mode: ChartMode;
   onChange: (m: ChartMode) => void;
 }) {
-  const items: { id: ChartMode; label: string }[] = [
-    { id: "bar", label: "막대" },
-    { id: "line", label: "선" },
+  const items: { id: ChartMode; label: string; path: React.ReactNode }[] = [
+    {
+      id: "bar",
+      label: "막대 그래프",
+      path: (
+        <>
+          <path d="M4 13V9M8.5 13V5M13 13V7" />
+          <path d="M2.5 15.5h13" opacity="0.45" />
+        </>
+      ),
+    },
+    {
+      id: "line",
+      label: "선 그래프",
+      path: (
+        <>
+          <path d="M3 12.5l3.5-4 3 2.5 4.5-6" />
+          <path d="M2.5 15.5h13" opacity="0.45" />
+        </>
+      ),
+    },
   ];
+
   return (
     <div className="ml-auto flex border border-[var(--line)]">
       {items.map((it) => {
@@ -403,14 +431,28 @@ function ChartToggle({
             key={it.id}
             type="button"
             aria-pressed={on}
+            aria-label={it.label}
+            title={it.label}
             onClick={() => onChange(it.id)}
-            className={`min-h-[44px] px-3 text-[14px] ${
+            className={`grid h-11 w-11 place-items-center ${
               on
-                ? "bg-[var(--sunken)] font-semibold text-[var(--ink)]"
-                : "text-[var(--ink-mid)] hover:text-[var(--ink)]"
+                ? "bg-[var(--sunken)] text-[var(--ink)]"
+                : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
             }`}
           >
-            {it.label}
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 18 18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              {it.path}
+            </svg>
           </button>
         );
       })}
