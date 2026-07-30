@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDoToRo 2차 설계 — 화면 목록</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/tokens.css">
+<style>
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 var(--sp-6) var(--sp-10); }
+  header.mast { padding: var(--sp-10) 0 var(--sp-6); border-bottom: 1px solid var(--fg); }
+  header.mast h1 { font-family: var(--font-display); font-size: 42px; font-weight: 500; line-height: 1.1;
+                   letter-spacing: -0.025em; margin: var(--sp-3) 0 var(--sp-4); }
+  header.mast p { max-width: 62ch; font-size: 17px; color: var(--muted); margin: 0; }
+  .meta { display: flex; gap: var(--sp-3); flex-wrap: wrap; margin-top: var(--sp-5); }
+
+  section { padding: var(--sp-8) 0; border-bottom: 1px solid var(--border); }
+  section > h2 { font-family: var(--font-display); font-size: 25px; font-weight: 500;
+                 letter-spacing: -0.018em; margin: 0 0 var(--sp-2); }
+  section > .sub { max-width: 64ch; color: var(--muted); margin: 0 0 var(--sp-6); }
+
+  .screens { display: grid; gap: 1px; background: var(--border); border: 1px solid var(--border); }
+  @media (min-width: 720px) { .screens { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 940px) { .screens { grid-template-columns: repeat(3, 1fr); } }
+  a.screen { display: block; background: var(--surface); padding: var(--sp-5); text-decoration: none; color: var(--fg);
+             transition: background 120ms ease; }
+  a.screen:hover { background: var(--sunken); }
+  a.screen .thumb { height: 132px; border: 1px solid var(--border); margin-bottom: var(--sp-4);
+                    background: oklch(96.5% 0.006 100); overflow: hidden; }
+  a.screen .thumb svg { display: block; width: 100%; height: 100%; }
+  a.screen h3 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+  a.screen .role { font-size: 14px; color: var(--muted); margin: 0; }
+  a.screen .go { margin-top: var(--sp-3); font-size: 14px; text-decoration: underline;
+                 text-underline-offset: 3px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  th, td { text-align: left; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border);
+           vertical-align: baseline; }
+  th { font-size: 14px; font-weight: 600; color: var(--muted); letter-spacing: 0.012em;
+       border-bottom-color: var(--border-str); }
+  td.q { width: 32%; font-weight: 500; }
+  ol.open { max-width: 68ch; padding-left: 1.3em; margin: 0; }
+  ol.open li { margin-bottom: var(--sp-4); }
+  ol.open b { font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast" data-od-id="overview-masthead">
+    <div class="t-eyebrow">DDoToRo · 2차 설계 시안</div>
+    <h1>기능 6개가 늘어난 뒤의 화면</h1>
+    <p>
+      1차는 좌측 320px 패널에 정보 9블록을 세로로 쌓았다. 신규 기능 5개가 상세에 들어오면 그 구조는
+      무너진다. 이번 설계는 <strong>고정 요약 카드 + 3탭</strong>으로 상세를 다시 짜고, 서체·색 체계를
+      전부 새로 정했다.
+    </p>
+    <div class="meta">
+      <span class="badge">양평군 필지 343,116건</span>
+      <span class="badge">읍면 12개</span>
+      <span class="badge">시안 데이터</span>
+      <span class="badge">데스크톱 웹 · 최소 1280px</span>
+    </div>
+  </header>
+
+  <section data-od-id="screen-list">
+    <h2>화면</h2>
+    <p class="sub">세 화면 모두 실제로 눌러볼 수 있다. 지도는 필지 클릭·검색·줌(z13~17)이 동작한다.
+      <strong>데스크톱 웹만</strong> 다룬다 — 모바일은 이번 범위에서 제외했다.</p>
+    <div class="screens">
+
+      <a class="screen" href="map-desktop.html">
+        <div class="thumb"><svg viewBox="0 0 320 132" aria-hidden="true">
+          <rect x="0" y="0" width="320" height="132" fill="oklch(96.5% 0.006 100)"/>
+          <rect x="0" y="0" width="320" height="14" fill="var(--surface)"/>
+          <line x1="0" y1="14.5" x2="320" y2="14.5" stroke="var(--border)"/>
+          <rect x="0" y="15" width="104" height="117" fill="var(--surface)"/>
+          <line x1="104.5" y1="15" x2="104.5" y2="132" stroke="var(--border)"/>
+          <rect x="10" y="24" width="26" height="26" fill="var(--p4)" stroke="var(--fg)" stroke-width="0.7"/>
+          <rect x="42" y="26" width="46" height="4" fill="var(--border-str)"/>
+          <rect x="42" y="36" width="34" height="7" fill="var(--fg)"/>
+          <rect x="10" y="58" width="72" height="11" fill="var(--fg)"/>
+          <rect x="10" y="76" width="84" height="1" fill="var(--border)"/>
+          <rect x="10" y="82" width="26" height="8" fill="var(--sunken)" stroke="var(--fg)" stroke-width="0.6"/>
+          <rect x="40" y="82" width="26" height="8" fill="var(--bg)"/>
+          <rect x="70" y="82" width="24" height="8" fill="var(--bg)"/>
+          <g stroke="#fff" stroke-width="0.5">
+            <rect x="112" y="22" width="30" height="24" fill="var(--p2)"/>
+            <rect x="144" y="22" width="34" height="24" fill="var(--p4)"/>
+            <rect x="180" y="22" width="28" height="24" fill="var(--p1)"/>
+            <rect x="210" y="22" width="36" height="24" fill="var(--p3)"/>
+            <rect x="248" y="22" width="30" height="24" fill="var(--p5)"/>
+            <rect x="112" y="48" width="34" height="26" fill="var(--p3)"/>
+            <rect x="148" y="48" width="30" height="26" fill="var(--p5)"/>
+            <rect x="180" y="48" width="32" height="26" fill="var(--p2)"/>
+            <rect x="214" y="48" width="32" height="26" fill="var(--p4)"/>
+            <rect x="248" y="48" width="30" height="26" fill="var(--p3)"/>
+            <rect x="112" y="76" width="30" height="24" fill="var(--p1)"/>
+            <rect x="144" y="76" width="34" height="24" fill="var(--p3)"/>
+            <rect x="180" y="76" width="28" height="24" fill="var(--p4)"/>
+            <rect x="210" y="76" width="36" height="24" fill="var(--p2)"/>
+            <rect x="248" y="76" width="30" height="24" fill="var(--p4)"/>
+          </g>
+          <path d="M104 68 L320 58" stroke="oklch(89% 0.032 232)" stroke-width="7"/>
+          <rect x="112" y="108" width="62" height="16" fill="var(--surface)" stroke="var(--border)"/>
+        </svg></div>
+        <h3>지도 · 데스크톱</h3>
+        <p class="role">메인. 가격 5단계 채색 + 고정 요약 카드 + 3탭 상세 · 검색 · 읍면 시세</p>
+        <div class="go">map-desktop.html</div>
+      </a>
+
+      <a class="screen" href="land-detail-page.html">
+        <div class="thumb"><svg viewBox="0 0 320 132" aria-hidden="true">
+          <rect x="0" y="0" width="320" height="132" fill="var(--bg)"/>
+          <rect x="0" y="0" width="320" height="13" fill="var(--surface)"/>
+          <line x1="0" y1="13.5" x2="320" y2="13.5" stroke="var(--border)"/>
+          <rect x="86" y="26" width="30" height="30" fill="var(--p4)" stroke="var(--fg)" stroke-width="0.7"/>
+          <rect x="124" y="28" width="76" height="12" fill="var(--fg)"/>
+          <rect x="124" y="46" width="52" height="5" fill="var(--border-str)"/>
+          <line x1="86" y1="66" x2="234" y2="66" stroke="var(--fg)"/>
+          <rect x="86" y="74" width="104" height="16" fill="var(--fg)"/>
+          <g fill="var(--p3)">
+            <rect x="86" y="104" width="14" height="18"/><rect x="104" y="100" width="14" height="22"/>
+            <rect x="122" y="102" width="14" height="20"/><rect x="140" y="98" width="14" height="24"/>
+          </g>
+          <rect x="158" y="96" width="14" height="26" fill="var(--p5)"/>
+          <rect x="188" y="100" width="46" height="22" fill="var(--surface)" stroke="var(--border-str)"/>
+        </svg></div>
+        <h3>단독 페이지 <span class="badge" style="vertical-align:2px">JS 없이 렌더</span></h3>
+        <p class="role">검색 유입용 <code style="font-family:var(--font-mono);font-size:14px">/land/[pnu]</code>.
+          스크립트 없이 전부 보이고 인쇄도 된다</p>
+        <div class="go">land-detail-page.html</div>
+      </a>
+
+      <a class="screen" href="design-system.html">
+        <div class="thumb"><svg viewBox="0 0 320 132" aria-hidden="true">
+          <rect x="0" y="0" width="320" height="132" fill="var(--bg)"/>
+          <rect x="24" y="18" width="120" height="14" fill="var(--fg)"/>
+          <rect x="24" y="40" width="86" height="5" fill="var(--border-str)"/>
+          <g>
+            <rect x="24" y="60" width="42" height="30" fill="var(--p1)"/>
+            <rect x="68" y="60" width="42" height="30" fill="var(--p2)"/>
+            <rect x="112" y="60" width="42" height="30" fill="var(--p3)"/>
+            <rect x="156" y="60" width="42" height="30" fill="var(--p4)"/>
+            <rect x="200" y="60" width="42" height="30" fill="var(--p5)"/>
+            <rect x="244" y="60" width="42" height="30" fill="var(--p0)"/>
+          </g>
+          <rect x="24" y="102" width="60" height="14" fill="var(--accent)"/>
+          <rect x="92" y="102" width="60" height="14" fill="var(--surface)" stroke="var(--border-str)"/>
+          <rect x="164" y="104" width="122" height="10" fill="var(--surface)" stroke="var(--border)"/>
+        </svg></div>
+        <h3>디자인 시스템</h3>
+        <p class="role">새로 정한 서체 3종 · 색 토큰 · 타입 스케일 · 컴포넌트 · 1차 대비 변경표</p>
+        <div class="go">design-system.html</div>
+      </a>
+
+    </div>
+  </section>
+
+  <section data-od-id="decisions">
+    <h2>이번 설계에서 내린 결정</h2>
+    <p class="sub">브리프가 열어둔 질문들에 대한 답이다. 되돌릴 근거가 있으면 말씀해 주세요.</p>
+    <table>
+      <tbody>
+        <tr><td class="q">상세 패널 구조</td>
+            <td><strong>고정 요약 카드 + 3탭</strong>(땅 정보 · 시세 · 주변). 아코디언은 라벨이 모두 보이는
+                장점이 있으나 5개가 열리면 다시 세로 스크롤 문제로 돌아간다. 탭은 깊이를 3으로 묶어
+                어느 탭에서도 한 화면에 끝난다. 총액·지번·실루엣은 <strong>탭 밖에 고정</strong>해
+                어느 탭에 있어도 어느 땅인지 잃지 않는다.</td></tr>
+        <tr><td class="q">패널 폭</td>
+            <td>320 → <strong>384px</strong>, 1600px 이상에서 416px. 지목·면적 2열과 5년 차트가
+                320px에서는 눌린다. 지도 점유율은 여전히 70% 이상.</td></tr>
+        <tr><td class="q">“색은 가격만” 원칙</td>
+            <td><strong>유지한다.</strong> 신규 카테고리는 색이 아니라 1.7px 단선 아이콘으로 구분하고,
+                강조색은 가격 램프 최상단과 같은 벽돌 색족으로 묶어 화면의 색 이야기를 하나로 유지했다.</td></tr>
+        <tr><td class="q">가격 램프 색</td>
+            <td>초록 → <strong>점토·벽돌</strong>. 배경지도의 산림 초록과 램프가 같은 색상이라
+                축소 화면에서 섞였다.</td></tr>
+        <tr><td class="q">지역 시세 표기 단위</td>
+            <td><strong>평당을 앞에</strong>, ㎡당을 뒤에. z15 미만에서 읍면 12개 시세 칩을 지도에 직접
+                올려 “필지가 사라지는 빈 구간”을 채운다.</td></tr>
+        <tr><td class="q">역 거리 표기</td>
+            <td><strong>직선거리를 주 표기</strong>, 차 소요시간은 추정으로 병기. 경로 API 약관이
+                확인되기 전까지 도보 시간은 쓰지 않는다 — 산악 지형에서 오차가 크다.</td></tr>
+        <tr><td class="q">뉴스 비중</td>
+            <td>‘주변’ 탭 <strong>최하단</strong>, 바탕색을 한 단 낮춰 시각 비중을 내렸다.</td></tr>
+        <tr><td class="q">화면 폭 정책</td>
+            <td>지도 화면은 <strong>최소 1280px</strong>, 그보다 좁으면 축소하지 않고 가로 스크롤한다.
+                1024px로 낮추면 패널을 빼고 지도가 640px밖에 안 남아 필지 클릭이 어려워진다.
+                <strong>단독 페이지만 예외</strong> — 검색 유입이 목적이라 모바일 검색 트래픽이 들어오므로
+                깨지지 않을 정도의 폴백 한 블록을 남겼다. 모바일 UI를 설계한 것은 아니다.</td></tr>
+        <tr><td class="q">최소 글자 크기</td>
+            <td>1차 지침이 선언한 14px 하한을 실제로 지켰다. 13px을 쓰던 단위·힌트를 전부 14px로 올렸다.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section data-od-id="open-items" style="border-bottom:0">
+    <h2>남은 결정 · 데이터</h2>
+    <ol class="open">
+      <li><b>시세 추이 5년 → 10년.</b> 원본 <code style="font-family:var(--font-mono);font-size:14px">A16~A19</code>로
+          5년은 적재 로직만 고치면 된다. 차트는 <strong>연도 수 가변</strong>을 전제로 그렸다.</li>
+      <li><b>지하철역 좌표.</b> 양평군 내 경의중앙선 역이 10개 미만이라 직접 입력이 현실적이다.
+          경로 API 약관 확인 전까지 직선거리로 간다.</li>
+      <li><b>공공시설 카테고리.</b> 시안은 초등학교·보건지소·마트·관공서·버스정류장 5종. 시골 땅에서는
+          개수가 아니라 <strong>가장 가까운 하나의 거리</strong>가 정보다.</li>
+      <li><b>뉴스 검색 키워드.</b> 읍면 단위(“양평군 서종면 부동산”)가 군 단위보다 관련도가 높지만
+          결과 수가 급감한다. 군 단위 + 읍면 필터를 권한다.</li>
+      <li><b>z15 미만 안내.</b> 1차 방침대로 배너를 띄우지 않는다. 대신 읍면 시세 칩이 그 구간의 콘텐츠가 된다.</li>
+      <li><b>모바일은 보류.</b> 데스크톱을 확정한 뒤 착수한다. 하단 시트 3단계 시안은
+        <code style="font-family:var(--font-mono);font-size:14px">parked/map-mobile.html</code>에 보관해 두었다.</li>
+    </ol>
+  </section>
+
+</div>
+</body>
+</html>

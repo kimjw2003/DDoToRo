@@ -111,10 +111,10 @@ export default async function LandPage({ params }: Props) {
       <p className="font-serif-num mt-5 text-[34px] leading-[1.25] text-[var(--ink)]">
         {formatWon(parcel.total_price)}
       </p>
-      <p className="text-[13px] text-[var(--ink-soft)]">
+      <p className="text-[14px] text-[var(--ink-soft)]">
         {parcel.price_year ? `${parcel.price_year}년 공시` : "공시연도 정보 없음"}
       </p>
-      <p className="tnum mt-2 text-[13px] text-[var(--ink-mid)]">
+      <p className="tnum mt-2 text-[14px] text-[var(--ink-mid)]">
         ㎡당 {formatWonPlain(parcel.price_per_sqm)}
         {perPyeong !== null && <> · 평당 {formatWonPlain(perPyeong)}</>}
       </p>
@@ -159,7 +159,7 @@ export default async function LandPage({ params }: Props) {
 
       <hr className="my-6 border-0 border-t border-[var(--line)]" />
 
-      <p className="text-[13px] leading-[1.7] text-[var(--ink-soft)]">
+      <p className="text-[14px] leading-[1.7] text-[var(--ink-soft)]">
         개별공시지가는 매년 1월 1일을 기준으로 연 1회 공시되는 공적 가격입니다.
         실제 거래 시세와는 다릅니다.
       </p>

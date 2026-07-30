@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDoToRo — 디자인 시스템 2차</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/tokens.css">
+<style>
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 var(--sp-6) var(--sp-10); }
+  header.masthead { border-bottom: 1px solid var(--fg); margin-bottom: var(--sp-8); padding: var(--sp-10) 0 var(--sp-5); }
+  header.masthead .t-h1 { font-size: 44px; margin: var(--sp-3) 0 var(--sp-4); }
+  .lede { max-width: 62ch; font-size: 17px; color: var(--muted); }
+
+  section { padding: var(--sp-10) 0; border-bottom: 1px solid var(--border); }
+  section > h2 { font-family: var(--font-display); font-size: 26px; font-weight: 500;
+                 letter-spacing: -0.018em; margin: 0 0 var(--sp-2); }
+  section > .sub { max-width: 62ch; color: var(--muted); font-size: 16px; margin: 0 0 var(--sp-6); }
+  h3.blk { font-size: 17px; font-weight: 600; margin: var(--sp-8) 0 var(--sp-4); }
+
+  .grid6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+  @media (min-width: 900px) { .grid6 { grid-template-columns: repeat(6, 1fr); } }
+  .tok { background: var(--surface); padding: var(--sp-3); }
+  .tok .chip { height: 62px; border: 1px solid var(--border-str); margin-bottom: var(--sp-3); }
+  .tok b { display: block; font-family: var(--font-mono); font-size: 14px; font-weight: 500; letter-spacing: 0.01em; }
+  .tok span { display: block; font-size: 14px; color: var(--muted); margin-top: 2px; }
+  .tok code { font-family: var(--font-mono); font-size: 14px; color: var(--hint); word-break: break-all; }
+
+  .ramp5 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px; background: var(--border);
+           border: 1px solid var(--border); }
+  .ramp5 > div { background: var(--surface); }
+  .ramp5 .bar { height: 84px; }
+  .ramp5 .meta { padding: var(--sp-3); }
+  .ramp5 .meta b { font-family: var(--font-mono); font-size: 14px; font-weight: 500; }
+  .ramp5 .meta span { display: block; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .specimen { border: 1px solid var(--border); background: var(--surface); padding: var(--sp-6); }
+  .specimen + .specimen { border-top: 0; }
+  .spec-name { display: flex; align-items: baseline; gap: var(--sp-3); flex-wrap: wrap; margin-bottom: var(--sp-4); }
+  .spec-name b { font-size: 17px; font-weight: 600; }
+  .spec-role { font-size: 14px; color: var(--muted); }
+  .spec-big { font-size: 46px; line-height: 1.1; letter-spacing: -0.025em; }
+  .spec-run { margin-top: var(--sp-3); font-size: 16px; color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  th, td { text-align: left; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border); vertical-align: baseline; }
+  th { font-size: 14px; font-weight: 600; letter-spacing: 0.012em; color: var(--muted);
+       border-bottom-color: var(--border-str); }
+  td.num, th.num { font-variant-numeric: tabular-nums; }
+  td.mono { font-family: var(--font-mono); font-size: 14px; }
+  td.was { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+
+  .comps { display: grid; gap: 1px; background: var(--border); border: 1px solid var(--border); }
+  @media (min-width: 760px) { .comps { grid-template-columns: 1fr 1fr; } }
+  .comp { background: var(--surface); padding: var(--sp-5); }
+  .comp-lab { font-family: var(--font-mono); font-size: 14px; color: var(--muted); margin-bottom: var(--sp-4);
+              letter-spacing: 0.02em; }
+  .row { display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap; }
+
+  .tabs-demo { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--border); }
+  .tabs-demo button { height: 50px; background: var(--bg); border: 0; border-bottom: 2px solid transparent;
+                      font-family: var(--font-body); font-size: 16px; font-weight: 500; color: var(--muted); cursor: pointer; }
+  .tabs-demo button[aria-selected="true"] { background: var(--surface); color: var(--fg);
+                                            font-weight: 600; border-bottom-color: var(--fg); }
+  ul.rules { max-width: 68ch; padding-left: 1.1em; margin: 0; }
+  ul.rules li { margin-bottom: var(--sp-3); }
+  ul.rules code { font-family: var(--font-mono); font-size: 14px; background: var(--sunken);
+                  border: 1px solid var(--border); padding: 0 4px; }
+  .nav-back { display: inline-block; margin-top: var(--sp-8); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead" data-od-id="ds-masthead">
+    <div class="t-eyebrow">DDoToRo · Design System v2</div>
+    <h1 class="t-h1">땅은 장부에 적힌다</h1>
+    <p class="lede">
+      상속받은 땅의 가치를 모르는 40~60대가 주 사용자다. 그래서 이 시스템은 앱처럼 보이지 않고
+      <strong>공적 장부처럼</strong> 보이는 것을 목표로 한다. 숫자는 명조로 인쇄되고, 채도가 있는 색은
+      가격에만 쓰이고, 14px 미만은 존재하지 않는다.
+    </p>
+  </header>
+
+  <!-- ── 명제 ─────────────────────────── -->
+  <section data-od-id="ds-principles">
+    <h2>설계 명제 3개</h2>
+    <p class="sub">이 셋이 충돌하면 위에 있는 것이 이긴다.</p>
+    <table>
+      <tbody>
+        <tr><td style="width:34%"><strong>채도는 가격만 뜻한다</strong></td>
+            <td>UI 크롬·텍스트·아이콘은 무채색. 강조색은 가격 램프의 최상단과 같은 색족(벽돌)이라
+                화면에 색 이야기가 하나만 존재한다. 지하철·시설·뉴스는 색이 아니라 <strong>단선 아이콘</strong>으로 구분한다.</td></tr>
+        <tr><td><strong>숫자는 명조로 인쇄된다</strong></td>
+            <td>토지대장·등기부등본이 명조로 인쇄된다. 공시지가가 시세가 아니라 공적으로 고시된
+                가격임을 서체로 전달한다. 장식이 아니라 출처 표시다.</td></tr>
+        <tr><td><strong>모양으로 알아본다</strong></td>
+            <td>필지 실루엣이 유일한 시그니처다. 대담함은 여기 한 곳에만 쓴다.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── 색 ───────────────────────────── -->
+  <section data-od-id="ds-color">
+    <h2>색</h2>
+    <p class="sub">종이·먹 무채색 6토큰 + 강조 1색. 전부 <code style="font-family:var(--font-mono);font-size:14px">oklch()</code>로 선언한다.</p>
+
+    <div class="grid6">
+      <div class="tok"><div class="chip" style="background:var(--bg)"></div><b>--bg</b><span>화면 바탕</span><code>98% .004 95</code></div>
+      <div class="tok"><div class="chip" style="background:var(--surface)"></div><b>--surface</b><span>패널·카드</span><code>100% .002 95</code></div>
+      <div class="tok"><div class="chip" style="background:var(--fg)"></div><b>--fg</b><span>본문·먹선</span><code>20% .018 70</code></div>
+      <div class="tok"><div class="chip" style="background:var(--muted)"></div><b>--muted</b><span>보조 텍스트</span><code>48% .012 70</code></div>
+      <div class="tok"><div class="chip" style="background:var(--border)"></div><b>--border</b><span>1px 구분선</span><code>90% .006 95</code></div>
+      <div class="tok"><div class="chip" style="background:var(--accent)"></div><b>--accent</b><span>주 버튼 · 관인</span><code>52% .10 28</code></div>
+    </div>
+
+    <h3 class="blk">가격 램프 5단계 — 분위수</h3>
+    <div class="ramp5" data-od-id="ds-ramp">
+      <div><div class="bar" style="background:var(--p1)"></div><div class="meta"><b>--p1</b><span>~ 21,300원</span></div></div>
+      <div><div class="bar" style="background:var(--p2)"></div><div class="meta"><b>--p2</b><span>~ 42,400원</span></div></div>
+      <div><div class="bar" style="background:var(--p3)"></div><div class="meta"><b>--p3</b><span>~ 77,100원</span></div></div>
+      <div><div class="bar" style="background:var(--p4)"></div><div class="meta"><b>--p4</b><span>~ 156,000원</span></div></div>
+      <div><div class="bar" style="background:var(--p5)"></div><div class="meta"><b>--p5</b><span>156,000원 ~</span></div></div>
+      <div><div class="bar" style="background:var(--p0)"></div><div class="meta"><b>--p0</b><span>정보 없음 0.448%</span></div></div>
+    </div>
+    <ul class="rules" style="margin-top:var(--sp-5)">
+      <li><strong>1차의 초록 램프를 점토·벽돌 계열로 교체했다.</strong> 베이스맵의 산림 초록과 램프가 같은
+          색상이라 축소 화면에서 필지와 지형이 섞였다. 벽돌 계열은 VWorld 배경(누런 육지·초록 산림·파란 물)
+          어디와도 겹치지 않는다.</li>
+      <li>구간은 <strong>분위수 5분할</strong>. 등간격 금지 — 지가 분포가 극단적으로 치우쳐 있다.</li>
+      <li>정보 없음은 색이 아니라 <strong>45° 사선 해치</strong>. 색을 하나 더 쓰지 않고 구분한다.</li>
+      <li><code>--p4</code>·<code>--p5</code> 위에는 흰 글씨, <code>--p1</code>~<code>--p3</code> 위에는 <code>--fg</code>.</li>
+      <li>강조색은 한 화면에 <strong>최대 2곳</strong>. 경고를 노랑·빨강으로 칠하지 않는다 — 테두리 박스 + <code>--muted</code>로 충분하다.</li>
+    </ul>
+  </section>
+
+  <!-- ── 서체 ─────────────────────────── -->
+  <section data-od-id="ds-type">
+    <h2>서체</h2>
+    <p class="sub">1차의 Pretendard + 나눔명조 조합을 전부 교체했다. 표제·숫자에 <strong>Hahmlet</strong>,
+       본문·UI에 <strong>IBM Plex Sans KR</strong>, 메타·고유번호에 <strong>IBM Plex Mono</strong>.</p>
+
+    <div class="specimen">
+      <div class="spec-name"><b>Hahmlet</b> <span class="spec-role">표제 · 지번 · 금액 — 400/500/600</span></div>
+      <div class="spec-big" style="font-family:var(--font-display);font-weight:500">3억 2,180만원</div>
+      <div class="spec-run" style="font-family:var(--font-display)">문호리 245-7 · 전(밭) · 1,652㎡</div>
+      <div class="t-label" style="margin-top:var(--sp-4)">
+        나눔명조보다 세로 줄기가 굵고 자폭이 좁아 40px 총액에서 밀도가 유지된다.
+        한글·라틴·숫자를 한 가족이 커버해 금액 표기에서 서체가 섞이지 않는다.</div>
+    </div>
+    <div class="specimen">
+      <div class="spec-name"><b>IBM Plex Sans KR</b> <span class="spec-role">본문 · 라벨 · 버튼 — 400/500/600</span></div>
+      <div class="spec-big" style="font-weight:500">지도에서 땅을 눌러 보세요</div>
+      <div class="spec-run">정부가 지번을 일부만 공개해 지역 평균으로만 보여드립니다.</div>
+      <div class="t-label" style="margin-top:var(--sp-4)">
+        공문서용으로 설계된 가족이라 장부 성격에 맞고, 16px 본문에서 획이 뭉치지 않는다.</div>
+    </div>
+    <div class="specimen">
+      <div class="spec-name"><b>IBM Plex Mono</b> <span class="spec-role">고유번호 · 아이브로 · 배지 — 400/500</span></div>
+      <div class="spec-big" style="font-family:var(--font-mono);font-size:28px;letter-spacing:0.01em">4183034024102450007</div>
+      <div class="spec-run t-eyebrow" style="letter-spacing:0.09em">PNU · 2026 OFFICIAL</div>
+    </div>
+
+    <h3 class="blk">타입 스케일</h3>
+    <table data-od-id="ds-scale">
+      <thead><tr><th>용도</th><th class="num">크기</th><th class="num">굵기</th><th>자간</th><th>서체</th></tr></thead>
+      <tbody>
+        <tr><td>공시지가 총액</td><td class="num">40px</td><td class="num">500</td><td class="mono">-0.025em</td><td>Hahmlet</td></tr>
+        <tr><td>페이지 제목</td><td class="num">30px</td><td class="num">500</td><td class="mono">-0.02em</td><td>Hahmlet</td></tr>
+        <tr><td>지번</td><td class="num">22px</td><td class="num">500</td><td class="mono">-0.01em</td><td>Hahmlet</td></tr>
+        <tr><td>섹션 제목</td><td class="num">17px</td><td class="num">600</td><td class="mono">0</td><td>Plex Sans KR</td></tr>
+        <tr><td>본문 · 탭 · 값</td><td class="num">16px</td><td class="num">400</td><td class="mono">0</td><td>Plex Sans KR</td></tr>
+        <tr><td>라벨 · 단위 · 안내</td><td class="num">14px</td><td class="num">400</td><td class="mono">0.012em</td><td>Plex Sans KR</td></tr>
+        <tr><td>아이브로(대문자)</td><td class="num">14px</td><td class="num">500</td><td class="mono">0.09em</td><td>Plex Mono</td></tr>
+      </tbody>
+    </table>
+    <ul class="rules" style="margin-top:var(--sp-5)">
+      <li><strong>14px가 하한이다.</strong> 1차 지침은 14px 하한을 선언하고도 단위·힌트에 13px을 쓰고 있었다.
+          이번에는 13px을 전부 14px로 올렸다.</li>
+      <li>굵기는 400 / 500 / 600 세 단계. 700은 쓰지 않는다.</li>
+      <li>본문 <code>line-height 1.7</code>, 40px 이상 표제는 <code>1.05~1.15</code>.</li>
+      <li>명조는 <strong>총액 · 지번 · 페이지 제목</strong> 세 군데만. 나머지 숫자는 Plex Sans +
+          <code>tabular-nums</code>.</li>
+      <li>대문자 라틴에는 <code>letter-spacing 0.09em</code>을 반드시 붙인다.</li>
+    </ul>
+  </section>
+
+  <!-- ── 컴포넌트 ─────────────────────── -->
+  <section data-od-id="ds-components">
+    <h2>컴포넌트</h2>
+    <p class="sub">그림자·라운드·그라디언트를 쓰지 않는다. 유일한 예외는 주 버튼의 1px 하단 입체다.</p>
+    <div class="comps">
+      <div class="comp">
+        <div class="comp-lab">button</div>
+        <div class="row">
+          <button class="btn btn-primary">지도로 돌아가기</button>
+          <button class="btn">다시 시도</button>
+        </div>
+        <div class="t-label" style="margin-top:var(--sp-4)">최소 높이 44px. 주 버튼은 화면당 1개.</div>
+      </div>
+      <div class="comp">
+        <div class="comp-lab">tabs — 상세 패널 3분할</div>
+        <div class="tabs-demo">
+          <button aria-selected="true">땅 정보</button><button>시세</button><button>주변</button>
+        </div>
+        <div class="t-label" style="margin-top:var(--sp-4)">높이 50px. 선택은 2px 먹선 + 굵기 600.</div>
+      </div>
+      <div class="comp">
+        <div class="comp-lab">note — 필수 경고 문구</div>
+        <div class="note"><strong>이 필지의 거래 기록이 아닙니다.</strong><br>
+          정부가 지번을 일부만 공개해 지역 평균으로만 보여드립니다.</div>
+      </div>
+      <div class="comp">
+        <div class="comp-lab">badge — 시안 · 미연동 표시</div>
+        <div class="row">
+          <span class="badge">시안 데이터</span>
+          <span class="badge">표시 예시 · 좌표 연동 전</span>
+        </div>
+        <div class="t-label" style="margin-top:var(--sp-4)">데이터가 아직 없는 항목은 반드시 이 배지를 붙인다.</div>
+      </div>
+      <div class="comp">
+        <div class="comp-lab">silhouette — 시그니처</div>
+        <div class="row">
+          <svg class="silhouette" viewBox="0 0 88 88" aria-label="필지 모양 예시">
+            <path d="M14 22 L58 11 L74 40 L62 74 L26 68 L11 47 Z" fill="var(--p4)"/></svg>
+          <svg class="silhouette" viewBox="0 0 88 88" aria-label="필지 모양 예시">
+            <path d="M20 13 L70 26 L60 77 L30 70 Z" fill="var(--p2)"/></svg>
+          <svg class="silhouette" viewBox="0 0 88 88" aria-label="필지 모양 예시">
+            <defs><pattern id="h3" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="6" height="6" fill="var(--p0)"/>
+              <line x1="0" y1="0" x2="0" y2="6" stroke="oklch(80% 0.006 95)" stroke-width="1.6"/></pattern></defs>
+            <path d="M16 30 L46 12 L76 34 L58 72 L22 62 Z" fill="url(#h3)"/></svg>
+        </div>
+        <div class="t-label" style="margin-top:var(--sp-4)">88×88px. 채움은 가격 단계 색, 테두리 1.25px 먹선.
+          1차의 72px에서 키웠다 — 모양 식별이 이 서비스의 기억 장치다.</div>
+      </div>
+      <div class="comp">
+        <div class="comp-lab">pairs — 라벨/값 2열</div>
+        <dl class="pairs">
+          <dt>지목</dt><dd>전(밭)</dd>
+          <dt>면적</dt><dd>1,652㎡ (500평)</dd>
+          <dt>고유번호</dt><dd class="t-mono">4183034024102450007</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 문구 ─────────────────────────── -->
+  <section data-od-id="ds-copy">
+    <h2>문구 규칙</h2>
+    <table>
+      <thead><tr><th style="width:30%">규칙</th><th>쓴다</th><th>쓰지 않는다</th></tr></thead>
+      <tbody>
+        <tr><td>금액</td><td>3억 2,180만원</td><td class="was">321,800,000원</td></tr>
+        <tr><td>면적</td><td>1,652㎡ (500평)</td><td class="was">1,652㎡</td></tr>
+        <tr><td>지목</td><td>전(밭) · 임야(산) · 대(집터)</td><td class="was">전 · 임 · 대</td></tr>
+        <tr><td>단가 단위</td><td>평당 먼저, ㎡당 뒤에</td><td class="was">㎡당만 표기</td></tr>
+        <tr><td>거리</td><td>직선 1.8km (차 7분 추정)</td><td class="was">도보 25분</td></tr>
+        <tr><td>기준연도</td><td>2026년 공시</td><td class="was">생략</td></tr>
+        <tr><td>실패</td><td>필지 정보를 불러오지 못했습니다. 다시 시도</td><td class="was">죄송합니다…</td></tr>
+        <tr><td>줌 부족</td><td>아무 안내도 띄우지 않는다</td><td class="was">확대해 주세요 배너</td></tr>
+      </tbody>
+    </table>
+    <p class="sub" style="margin-top:var(--sp-5)">사과하지 않는다. 무엇이 일어났고 무엇을 하면 되는지만 쓴다.</p>
+  </section>
+
+  <!-- ── 1차 대비 ─────────────────────── -->
+  <section data-od-id="ds-diff" style="border-bottom:0">
+    <h2>1차에서 바뀐 것</h2>
+    <table>
+      <thead><tr><th style="width:22%">항목</th><th style="width:32%">1차</th><th>2차</th></tr></thead>
+      <tbody>
+        <tr><td>본문 서체</td><td class="was">Pretendard</td><td>IBM Plex Sans KR</td></tr>
+        <tr><td>숫자 서체</td><td class="was">나눔명조</td><td>Hahmlet</td></tr>
+        <tr><td>메타 서체</td><td class="was">없음</td><td>IBM Plex Mono (PNU · 배지 · 아이브로)</td></tr>
+        <tr><td>가격 램프</td><td class="was">초록 5단계</td><td>점토·벽돌 5단계 — 배경 산림과 분리</td></tr>
+        <tr><td>강조색</td><td class="was">금지</td><td>벽돌 1색, 화면당 2회 — 램프 최상단과 같은 색족</td></tr>
+        <tr><td>최소 글자</td><td class="was">13px 혼용</td><td>14px 하한 강제</td></tr>
+        <tr><td>실루엣</td><td class="was">72px</td><td>88px</td></tr>
+        <tr><td>패널 폭</td><td class="was">320px 고정</td><td>384px (≥1600px에서 416px)</td></tr>
+        <tr><td>패널 구조</td><td class="was">단일 세로 스크롤 9블록</td><td>고정 요약 카드 + 3탭</td></tr>
+        <tr><td>대상 화면</td><td class="was">데스크톱 + 모바일 동시</td><td>데스크톱 웹만 (최소 1280px) — 모바일 보류</td></tr>
+      </tbody>
+    </table>
+    <a class="link nav-back" href="index.html">← 화면 목록으로</a>
+  </section>
+
+</div>
+</body>
+</html>

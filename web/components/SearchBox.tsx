@@ -76,9 +76,9 @@ export default function SearchBox({
       {term.length >= 2 && (
         <div className="mt-2">
           {loading && hits === null ? (
-            <p className="text-[13px] text-[var(--ink-soft)]">찾는 중</p>
+            <p className="text-[14px] text-[var(--ink-soft)]">찾는 중</p>
           ) : hits && hits.length === 0 ? (
-            <p className="text-[13px] leading-[1.7] text-[var(--ink-mid)]">
+            <p className="text-[14px] leading-[1.7] text-[var(--ink-mid)]">
               &lsquo;{term}&rsquo;에 해당하는 필지가 없습니다. 지번을 확인해
               주세요
             </p>
@@ -96,11 +96,11 @@ export default function SearchBox({
                   >
                     <span className="text-[14px] text-[var(--ink)]">
                       {[h.emd, h.ri, h.jibun].filter(Boolean).join(" ")}
-                      <span className="ml-2 text-[13px] text-[var(--ink-soft)]">
+                      <span className="ml-2 text-[14px] text-[var(--ink-soft)]">
                         {formatJimok(h.jimok)}
                       </span>
                     </span>
-                    <span className="tnum shrink-0 text-[13px] text-[var(--ink-mid)]">
+                    <span className="tnum shrink-0 text-[14px] text-[var(--ink-mid)]">
                       {h.price_per_sqm === null
                         ? "정보 없음"
                         : `${formatWonPlain(h.price_per_sqm)}/㎡`}

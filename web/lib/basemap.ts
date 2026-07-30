@@ -80,9 +80,14 @@ export function basemapStyle(): StyleSpecification {
             여기서 도로가 흐려지는 것은 상관없다.
             도로·지명은 위에 얹는 roads 레이어가 다시 그려준다.
           */
-          "raster-saturation": usingVWorld ? -0.55 : -0.6,
+          /*
+            2차에서 램프가 따뜻한 벽돌 계열로 바뀌었다.
+            VWorld의 누런 육지와 색족이 겹치므로 1차(-0.55)보다 더 눌러야
+            z13~14에서 필지와 지형이 구분된다.
+          */
+          "raster-saturation": usingVWorld ? -0.7 : -0.6,
           "raster-contrast": usingVWorld ? 0 : -0.15,
-          "raster-brightness-min": usingVWorld ? 0.46 : 0.08,
+          "raster-brightness-min": usingVWorld ? 0.5 : 0.08,
           "raster-opacity": 1,
         },
       },

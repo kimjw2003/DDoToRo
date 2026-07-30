@@ -105,12 +105,12 @@ export default function ParcelPanel({
       </p>
 
       {/* 4. 기준연도 — 실시간 시세가 아님을 반드시 밝힌다 */}
-      <p className="text-[13px] text-[var(--ink-soft)]">
+      <p className="text-[14px] text-[var(--ink-soft)]">
         {parcel.price_year ? `${parcel.price_year}년 공시` : "공시연도 정보 없음"}
       </p>
 
       {/* 5. 단가 */}
-      <p className="tnum mt-2 text-[13px] text-[var(--ink-mid)]">
+      <p className="tnum mt-2 text-[14px] text-[var(--ink-mid)]">
         ㎡당 {formatWonPlain(parcel.price_per_sqm)}
         {perPyeong !== null && <> · 평당 {formatWonPlain(perPyeong)}</>}
       </p>
@@ -139,14 +139,14 @@ export default function ParcelPanel({
               평균 ㎡당 {formatWonPlain(trade.median_price_per_sqm)} ·{" "}
               {trade.deal_count.toLocaleString()}건
             </p>
-            <p className="mt-3 border-t border-[var(--line)] pt-3 text-[13px] leading-[1.7] text-[var(--ink-mid)]">
+            <p className="mt-3 border-t border-[var(--line)] pt-3 text-[14px] leading-[1.7] text-[var(--ink-mid)]">
               이 필지의 거래 기록이 아닙니다.
               <br />
               정부가 지번을 일부만 공개해 지역 평균으로만 보여드립니다.
             </p>
           </>
         ) : (
-          <p className="mt-1 text-[13px] text-[var(--ink-mid)]">
+          <p className="mt-1 text-[14px] text-[var(--ink-mid)]">
             최근 거래 기록이 없습니다
           </p>
         )}

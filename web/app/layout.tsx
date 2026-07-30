@@ -1,19 +1,5 @@
 import type { Metadata } from "next";
-import { Nanum_Myeongjo } from "next/font/google";
 import "./globals.css";
-
-/*
-  명조는 숫자와 지번에만 쓴다.
-  토지대장·등기부등본 같은 공적 장부가 명조로 인쇄되기 때문이며,
-  공시지가가 시세가 아니라 공적으로 고시된 가격임을 서체로 전달한다.
-  UI 나머지는 Pretendard(globals.css에서 로드)를 쓴다.
-*/
-const myeongjo = Nanum_Myeongjo({
-  variable: "--font-myeongjo",
-  weight: ["400", "700"],
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "DDoToRo — 경기 양평군 땅값 조회",
@@ -27,12 +13,30 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className={`${myeongjo.variable} h-full`}>
+    <html lang="ko" className="h-full">
       <head>
-        {/* Pretendard는 Google Fonts에 없어 CDN에서 받는다 */}
+        {/*
+          서체는 여기서 <link>로 불러온다.
+          globals.css에서 @import 하면 Tailwind가 전개한 규칙 뒤로 밀려 CSS 스펙 위반이 된다.
+
+          Hahmlet          표제·지번·금액 (명조)
+          IBM Plex Sans KR 본문·라벨·버튼
+          IBM Plex Mono    고유번호·배지·아이브로
+        */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin=""
+        />
+        {/*
+          no-page-custom-font 규칙은 Pages Router의 개별 페이지를 전제로 한다.
+          App Router의 root layout은 모든 페이지에 적용되므로 여기서는 해당하지 않는다.
+        */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
           rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css"
         />
       </head>
       <body className="min-h-full">{children}</body>

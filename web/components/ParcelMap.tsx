@@ -9,6 +9,7 @@ import {
   type GeoJSONSource,
   type MapLayerMouseEvent,
   type MapMouseEvent,
+  type ExpressionSpecification,
 } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -31,10 +32,17 @@ import {
   MIN_PARCEL_ZOOM,
   YANGPYEONG_CENTER,
 } from "@/lib/basemap";
-import { fillColorExpression } from "@/lib/priceRamp";
+import { fillColorExpression, hatchImage } from "@/lib/priceRamp";
 
 const SRC = "parcels";
 const DEBOUNCE_MS = 300;
+
+/*
+  클릭·호버 대상 레이어.
+  가격이 있는 필지와 없는 필지를 서로 다른 레이어로 그리므로 둘 다 잡아야 한다.
+  하나만 넣으면 가격 정보가 없는 필지를 클릭할 수 없다.
+*/
+const PICK_LAYERS = ["parcel-fill", "parcel-fill-none"];
 
 export type ParcelProps = {
   pnu: string;
@@ -104,21 +112,46 @@ export default function ParcelMap({ selectedPnu, onSelect, flyTo }: Props) {
       */
       const beforeId = m.getLayer("roads") ? "roads" : undefined;
 
+      // 밑의 지형이 비쳐야 위치를 파악할 수 있다. 선택된 필지만 불투명하게 올린다
+      const fillOpacity: ExpressionSpecification = [
+        "case",
+        ["boolean", ["feature-state", "selected"], false],
+        1,
+        0.72,
+      ];
+
       m.addLayer(
         {
           id: "parcel-fill",
           type: "fill",
           source: SRC,
+          // 가격이 없는 필지는 아래 해치 레이어가 맡는다
+          filter: ["!=", ["get", "price_per_sqm"], null],
           paint: {
             "fill-color": fillColorExpression(),
-            // 밑의 지형이 비쳐야 위치를 파악할 수 있다.
-            // 선택된 필지만 불투명하게 올린다
-            "fill-opacity": [
-              "case",
-              ["boolean", ["feature-state", "selected"], false],
-              1,
-              0.72,
-            ],
+            "fill-opacity": fillOpacity,
+          },
+        },
+        beforeId,
+      );
+
+      /*
+        가격 정보가 없는 필지(0.448%)는 색을 하나 더 늘리지 않고 45° 사선으로 구분한다.
+        MapLibre는 fill-color와 fill-pattern을 한 레이어에 함께 쓸 수 없어 레이어를 나눈다.
+      */
+      const hatch = hatchImage();
+      if (hatch && !m.hasImage("hatch-none")) {
+        m.addImage("hatch-none", hatch);
+      }
+      m.addLayer(
+        {
+          id: "parcel-fill-none",
+          type: "fill",
+          source: SRC,
+          filter: ["==", ["get", "price_per_sqm"], null],
+          paint: {
+            "fill-pattern": "hatch-none",
+            "fill-opacity": fillOpacity,
           },
         },
         beforeId,
@@ -167,7 +200,7 @@ export default function ParcelMap({ selectedPnu, onSelect, flyTo }: Props) {
     m.on("zoomend", () => schedule(m));
 
     let hovered: string | number | undefined;
-    m.on("mousemove", "parcel-fill", (e: MapLayerMouseEvent) => {
+    m.on("mousemove", PICK_LAYERS, (e: MapLayerMouseEvent) => {
       m.getCanvas().style.cursor = "pointer";
       const f = e.features?.[0];
       if (!f?.id) return;
@@ -178,7 +211,7 @@ export default function ParcelMap({ selectedPnu, onSelect, flyTo }: Props) {
       m.setFeatureState({ source: SRC, id: hovered }, { hover: true });
     });
 
-    m.on("mouseleave", "parcel-fill", () => {
+    m.on("mouseleave", PICK_LAYERS, () => {
       m.getCanvas().style.cursor = "";
       if (hovered !== undefined) {
         m.setFeatureState({ source: SRC, id: hovered }, { hover: false });
@@ -186,7 +219,7 @@ export default function ParcelMap({ selectedPnu, onSelect, flyTo }: Props) {
       hovered = undefined;
     });
 
-    m.on("click", "parcel-fill", (e: MapLayerMouseEvent) => {
+    m.on("click", PICK_LAYERS, (e: MapLayerMouseEvent) => {
       const f = e.features?.[0];
       const pnu = f?.properties?.pnu as string | undefined;
       if (pnu) onSelect(pnu);
@@ -194,7 +227,7 @@ export default function ParcelMap({ selectedPnu, onSelect, flyTo }: Props) {
 
     // 빈 곳을 누르면 선택을 푼다
     m.on("click", (e: MapMouseEvent) => {
-      const hits = m.queryRenderedFeatures(e.point, { layers: ["parcel-fill"] });
+      const hits = m.queryRenderedFeatures(e.point, { layers: PICK_LAYERS });
       if (hits.length === 0) onSelect(null);
     });
 
@@ -315,7 +348,7 @@ export default function ParcelMap({ selectedPnu, onSelect, flyTo }: Props) {
 
       {truncated && !tooFar && (
         <div className="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2">
-          <p className="rounded border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-[13px] text-[var(--ink-mid)]">
+          <p className="rounded border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-[14px] text-[var(--ink-mid)]">
             필지가 많아 일부만 표시됩니다. 더 확대해 주세요
           </p>
         </div>
@@ -323,7 +356,7 @@ export default function ParcelMap({ selectedPnu, onSelect, flyTo }: Props) {
 
       {loading && !tooFar && (
         <div className="pointer-events-none absolute right-4 top-4">
-          <span className="rounded bg-[var(--surface)] px-2.5 py-1 text-[13px] text-[var(--ink-soft)]">
+          <span className="rounded bg-[var(--surface)] px-2.5 py-1 text-[14px] text-[var(--ink-soft)]">
             불러오는 중
           </span>
         </div>

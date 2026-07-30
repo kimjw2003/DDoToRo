@@ -102,7 +102,7 @@ export default function MapView() {
       <aside className="hidden w-[320px] shrink-0 overflow-y-auto border-r border-[var(--line)] bg-[var(--surface)] lg:block">
         <header className="border-b border-[var(--line)] px-5 py-4">
           <h1 className="font-serif-num text-[20px] text-[var(--ink)]">DDoToRo</h1>
-          <p className="text-[13px] text-[var(--ink-soft)]">
+          <p className="text-[14px] text-[var(--ink-soft)]">
             경기 양평군 땅값 조회
           </p>
           <div className="mt-3">
