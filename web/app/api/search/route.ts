@@ -47,11 +47,18 @@ export async function GET(request: Request) {
     where.push(`jibun = $${params.length}`);
   }
 
-  // '서종면 문호리'처럼 여러 토큰이 오면 모두 만족해야 한다
+  /*
+    '서종면 문호리'처럼 여러 토큰이 오면 모두 만족해야 한다.
+
+    시군구를 검색 대상에 넣는 이유는 두 가지다. '수원시 파장동'처럼 시부터
+    입력하는 것이 자연스럽고, 읍면동 이름이 경기도 안에서 유일하지 않아
+    ('중앙동'은 여러 시에 있다) 시를 적어야 좁힐 수 있다.
+  */
   for (const t of regionTokens) {
     params.push(`%${escapeLike(t)}%`);
     where.push(
-      `(emd || ' ' || coalesce(ri, '')) ILIKE $${params.length} ESCAPE '\\'`,
+      `(coalesce(sigungu, '') || ' ' || emd || ' ' || coalesce(ri, '')) ` +
+        `ILIKE $${params.length} ESCAPE '\\'`,
     );
   }
 
@@ -68,7 +75,7 @@ export async function GET(request: Request) {
        FROM parcel
       WHERE ${where.join(" AND ")}
       -- 가격이 있는 필지를 먼저 보여준다. 정보가 없는 필지는 사용자가 할 일이 없다
-      ORDER BY (price_per_sqm IS NULL), emd, ri, jibun
+      ORDER BY (price_per_sqm IS NULL), sigungu, emd, ri, jibun
       LIMIT $${params.length}`,
     params,
   );

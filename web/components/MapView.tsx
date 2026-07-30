@@ -8,6 +8,7 @@ import ParcelPanel, { type ParcelDetail } from "@/components/ParcelPanel";
 import Legend from "@/components/Legend";
 import SearchBox, { type SearchHit } from "@/components/SearchBox";
 import { formatWon } from "@/lib/format";
+import { SERVICE_AREA } from "@/lib/region";
 
 /** 모바일 하단 시트 스냅 3단계. 필지를 누르면 중간으로 열린다 */
 const SNAP = { collapsed: "88px", middle: "45vh", expanded: "85vh" } as const;
@@ -116,7 +117,7 @@ export default function MapView() {
         <header className="border-b border-[var(--line)] px-4 py-4">
           <h1 className="font-serif-num text-[22px] text-[var(--ink)]">DDoToRo</h1>
           <p className="text-[14px] text-[var(--ink-soft)]">
-            경기 양평군 땅값 조회
+            {SERVICE_AREA.short} 땅값 조회
           </p>
           <div className="mt-3">
             <SearchBox onPick={handlePick} />

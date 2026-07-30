@@ -691,7 +691,7 @@ function NearTab({ parcel }: { parcel: ParcelDetail }) {
         </p>
       </section>
 
-      <LocalNews emd={parcel.emd} />
+      <LocalNews emd={parcel.emd} sigungu={parcel.sigungu} />
     </>
   );
 }
@@ -703,7 +703,13 @@ function NearTab({ parcel }: { parcel: ParcelDetail }) {
  * 제목은 굵기 500에 --ink-mid. 역·시설보다 앞서 보이면 안 된다.
  * 결과가 없거나 API가 실패하면 섹션 자체를 감춘다. 에러 배너를 띄우지 않는다.
  */
-function LocalNews({ emd }: { emd: string | null }) {
+function LocalNews({
+  emd,
+  sigungu,
+}: {
+  emd: string | null;
+  sigungu: string | null;
+}) {
   const [items, setItems] = useState<
     { title: string; link: string; source_date: string | null }[] | null
   >(null);
@@ -711,7 +717,11 @@ function LocalNews({ emd }: { emd: string | null }) {
   useEffect(() => {
     if (!emd) return;
     let alive = true;
-    fetch(`/api/news?emd=${encodeURIComponent(emd)}`)
+    // 읍면동 이름만으로는 검색 범위가 좁고 다른 지역 기사가 섞인다.
+    // 시군구를 함께 넘겨 질의를 좁힌다
+    const qs = new URLSearchParams({ emd });
+    if (sigungu) qs.set("sigungu", sigungu);
+    fetch(`/api/news?${qs}`)
       .then((r) => (r.ok ? r.json() : { items: [] }))
       .then((j) => {
         if (alive) setItems(j.items ?? []);
@@ -722,7 +732,7 @@ function LocalNews({ emd }: { emd: string | null }) {
     return () => {
       alive = false;
     };
-  }, [emd]);
+  }, [emd, sigungu]);
 
   // 로딩 중이거나 결과가 없으면 아무것도 그리지 않는다
   if (!items || items.length === 0) return null;

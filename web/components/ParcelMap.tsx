@@ -29,9 +29,9 @@ setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
 import {
   basemapStyle,
+  DEFAULT_CENTER,
   INITIAL_ZOOM,
   MIN_PARCEL_ZOOM,
-  YANGPYEONG_CENTER,
 } from "@/lib/basemap";
 import { fillColorExpression, hatchImage, RAMP } from "@/lib/priceRamp";
 
@@ -45,7 +45,7 @@ const DEBOUNCE_MS = 300;
 */
 const PICK_LAYERS = ["parcel-fill", "parcel-fill-none"];
 
-/* 멀리서 보면 읍면 칩 12개가 서로 겹쳐 읽을 수 없다. 한 덩어리로 묶는다 */
+/* 멀리서 보면 읍면동 칩이 서로 겹쳐 읽을 수 없다. 시군구로 묶는다 */
 const COUNTY_ZOOM = 12.5;
 
 export type ChipLevel = "parcel" | "town" | "county";
@@ -76,6 +76,8 @@ type Props = {
 };
 
 type Town = {
+  sigungu_cd: string;
+  sigungu: string | null;
   emd: string;
   lng: number;
   lat: number;
@@ -85,11 +87,13 @@ type Town = {
 };
 
 type County = {
+  sigungu_cd: string;
   name: string;
   lng: number;
   lat: number;
   median_price_per_sqm: number | null;
   deal_count: number;
+  step: number;
 };
 
 const PYEONG = 3.3058;
@@ -98,6 +102,42 @@ const PYEONG = 3.3058;
 function pyeongMan(perSqm: number | null): string {
   if (perSqm === null) return "—";
   return Math.round((perSqm * PYEONG) / 10_000).toLocaleString();
+}
+
+/** 칩이 차지하는 대략적 화면 크기(px). 겹침 판정에 쓴다 */
+const CHIP_BOX = {
+  county: { w: 168, h: 64 },
+  town: { w: 138, h: 52 },
+} as const;
+
+/**
+ * 겹치는 칩을 걸러낸다.
+ *
+ * 경기도는 시군구가 47개이고 남부(수원·안양·군포·의왕)는 서로 붙어 있어
+ * 그대로 찍으면 칩이 포개져 어느 쪽 숫자인지 알 수 없다. MapLibre의 Marker는
+ * symbol 레이어와 달리 자동 충돌 회피를 하지 않으므로 직접 고른다.
+ *
+ * 거래가 많은 곳을 먼저 놓는다. 밀집 지역에서 하나만 남길 때 표본이 두터운 쪽이
+ * 그 일대를 대표하는 값으로 더 믿을 만하다.
+ */
+function withoutOverlap<T extends { lng: number; lat: number; deal_count: number }>(
+  m: MapLibreMap,
+  items: T[],
+  box: { w: number; h: number },
+): T[] {
+  const placed: { x: number; y: number }[] = [];
+  const out: T[] = [];
+
+  for (const it of [...items].sort((a, b) => b.deal_count - a.deal_count)) {
+    const p = m.project([it.lng, it.lat]);
+    const hit = placed.some(
+      (q) => Math.abs(q.x - p.x) < box.w && Math.abs(q.y - p.y) < box.h,
+    );
+    if (hit) continue;
+    placed.push(p);
+    out.push(it);
+  }
+  return out;
 }
 
 /**
@@ -168,8 +208,9 @@ export default function ParcelMap({
   const abort = useRef<AbortController | null>(null);
   const chips = useRef<Marker[]>([]);
   const towns = useRef<Town[] | null>(null);
-  const county = useRef<County | null>(null);
-  const chipLevel = useRef<ChipLevel | null>(null);
+  const counties = useRef<County[] | null>(null);
+  /** 지금 그려진 칩의 식별자. "레벨@줌" 형태다 */
+  const chipKey = useRef<string | null>(null);
   // 콜백이 바뀌어도 지도를 다시 만들지 않도록 ref로 들고 있는다
   const onLevelRef = useRef(onLevelChange);
   onLevelRef.current = onLevelChange;
@@ -189,7 +230,7 @@ export default function ParcelMap({
     const m = new MapLibreMap({
       container: container.current,
       style: basemapStyle(),
-      center: YANGPYEONG_CENTER,
+      center: DEFAULT_CENTER,
       zoom: INITIAL_ZOOM,
       minZoom: 8,
       maxZoom: 19,
@@ -340,7 +381,7 @@ export default function ParcelMap({
     return () => {
       chips.current.forEach((mk) => mk.remove());
       chips.current = [];
-      chipLevel.current = null;
+      chipKey.current = null;
       m.remove();
       map.current = null;
     };
@@ -357,14 +398,22 @@ export default function ParcelMap({
    * 줌에 맞춰 시세 칩을 바꾼다.
    *
    *   z15 이상   필지 폴리곤
-   *   z12.5~15   읍면 12개
-   *   z12.5 미만 시군구 한 덩어리 — 멀리서 보면 읍면 칩이 서로 겹쳐 읽을 수 없다
+   *   z12.5~15   읍면동
+   *   z12.5 미만 시군구 — 멀리서 보면 읍면동 칩이 서로 겹쳐 읽을 수 없다
    */
   async function syncChips(m: MapLibreMap, level: ChipLevel) {
-    if (level === chipLevel.current) return;
+    /*
+      같은 레벨 안에서도 줌이 바뀌면 화면상 칩 간격이 달라져 겹침 판정을 다시 해야 한다.
+      매 프레임 다시 고르면 칩이 깜빡이므로 0.5단계로 뭉뚱그린다.
+    */
+    const key =
+      level === "parcel"
+        ? "parcel"
+        : `${level}@${Math.round(m.getZoom() * 2) / 2}`;
+    if (key === chipKey.current) return;
 
     if (level === "parcel") {
-      chipLevel.current = level;
+      chipKey.current = key;
       chips.current.forEach((mk) => mk.remove());
       chips.current = [];
       return;
@@ -376,7 +425,7 @@ export default function ParcelMap({
         if (!res.ok) return;
         const json = await res.json();
         towns.current = json.towns as Town[];
-        county.current = json.county as County;
+        counties.current = json.counties as County[];
       } catch {
         return;
       }
@@ -384,40 +433,42 @@ export default function ParcelMap({
     // 응답을 기다리는 사이 줌이 또 바뀌었을 수 있다
     if (levelFor(m.getZoom()) !== level) return;
 
-    chipLevel.current = level;
+    chipKey.current = key;
     chips.current.forEach((mk) => mk.remove());
 
     if (level === "county") {
-      const c = county.current;
-      chips.current = c
-        ? [
-            new Marker({
-              element: priceChip({
-                name: c.name,
-                perSqm: c.median_price_per_sqm,
-                deals: c.deal_count,
-                step: 2,
-                large: true,
-              }),
-            })
-              .setLngLat([c.lng, c.lat])
-              .addTo(m),
-          ]
-        : [];
+      chips.current = withoutOverlap(
+        m,
+        counties.current ?? [],
+        CHIP_BOX.county,
+      ).map((c) =>
+        new Marker({
+          element: priceChip({
+            name: c.name,
+            perSqm: c.median_price_per_sqm,
+            deals: c.deal_count,
+            step: c.step,
+            large: true,
+          }),
+        })
+          .setLngLat([c.lng, c.lat])
+          .addTo(m),
+      );
       return;
     }
 
-    chips.current = (towns.current ?? []).map((t) =>
-      new Marker({
-        element: priceChip({
-          name: t.emd,
-          perSqm: t.median_price_per_sqm,
-          deals: t.deal_count,
-          step: t.step,
-        }),
-      })
-        .setLngLat([t.lng, t.lat])
-        .addTo(m),
+    chips.current = withoutOverlap(m, towns.current ?? [], CHIP_BOX.town).map(
+      (t) =>
+        new Marker({
+          element: priceChip({
+            name: t.emd,
+            perSqm: t.median_price_per_sqm,
+            deals: t.deal_count,
+            step: t.step,
+          }),
+        })
+          .setLngLat([t.lng, t.lat])
+          .addTo(m),
     );
   }
 

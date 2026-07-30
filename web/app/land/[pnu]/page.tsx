@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import ParcelSilhouette from "@/components/ParcelSilhouette";
 import { getParcel } from "@/lib/parcel";
+import { SERVICE_AREA } from "@/lib/region";
 import {
   formatArea,
   formatJibun,
@@ -100,7 +101,7 @@ export default async function LandPage({ params }: Props) {
           DDoToRo
         </Link>
         <span className="text-[14px] text-[var(--ink-mid)]">
-          경기 양평군 땅값 조회
+          {SERVICE_AREA.short} 땅값 조회
         </span>
       </header>
 

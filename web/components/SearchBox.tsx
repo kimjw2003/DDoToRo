@@ -68,7 +68,9 @@ export default function SearchBox({
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="서종면 245-7"
+        // 특정 지역 지번을 예로 들면 그 동네만 찾는 곳으로 오해된다.
+        // 입력 형식만 보여주고 지역명은 넣지 않는다
+        placeholder="읍면동 + 지번 (예: 파장동 100-1)"
         autoComplete="off"
         className="min-h-[44px] w-full rounded border border-[var(--line)] bg-[var(--surface)] px-3 text-[16px] text-[var(--ink)] placeholder:text-[var(--ink-soft)]"
       />

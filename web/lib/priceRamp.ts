@@ -3,15 +3,19 @@ import type { ExpressionSpecification } from "maplibre-gl";
 /**
  * 가격 5단계 램프.
  *
- * 구간은 양평군 전체 ㎡당 가격의 분위수(quantile) 5분할이다.
+ * 구간은 서비스 범위 전체 ㎡당 가격의 분위수(quantile) 5분할이다.
  * 등간격 분할은 금지한다. 지가 분포가 극단적으로 치우쳐 있어
  * 등간격으로 나누면 대부분이 1단계에 몰린다.
  *
- * 아래 경계값은 적재된 343,116건에서 실제로 계산한 값이다.
+ * 아래 경계값은 적재된 경기도 5,210,962건에서 실제로 계산한 값이다.
  *   SELECT percentile_cont(ARRAY[0.2,0.4,0.6,0.8]) WITHIN GROUP (ORDER BY price_per_sqm)
  *   FROM parcel WHERE price_per_sqm IS NOT NULL;
+ *
+ * 적재 범위를 바꾸면 반드시 다시 구한다. 양평군만 있을 때는
+ * [21300, 42400, 77100, 156000]이었다 — 경기도를 넣자 상위 구간이 3배로 벌어졌고,
+ * 옛 값을 그대로 두면 도심 필지가 전부 최상위 색으로 뭉개져 비교가 불가능해진다.
  */
-export const PRICE_BREAKS = [21_300, 42_400, 77_100, 156_000] as const;
+export const PRICE_BREAKS = [32_600, 72_800, 162_800, 461_200] as const;
 
 /*
   점토·벽돌 계열 단일 램프. 값의 출처는 globals.css의 --p1~--p5 하나뿐이다.

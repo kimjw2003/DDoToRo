@@ -65,6 +65,9 @@ type Row = {
 
 const num = (v: string | null) => (v === null ? null : Number(v));
 
+/** 이보다 먼 역은 '가까운 역'이 아니다. stations.ts 참고 */
+const STATION_MAX_M = 15_000;
+
 export function isValidPnu(pnu: string) {
   return /^\d{19}$/.test(pnu);
 }
@@ -95,7 +98,10 @@ export async function getParcel(pnu: string): Promise<Parcel | null> {
                FROM parcel_price_history h
               WHERE h.pnu = p.pnu) AS price_history
        FROM parcel p
-       LEFT JOIN emd_trade_avg t ON t.emd = p.emd
+       -- 읍면동 이름은 시군구를 넘으면 유일하지 않다. 코드까지 맞춰야
+       -- 다른 시의 거래가 이 필지의 지역 시세로 붙는 사고를 막는다
+       LEFT JOIN emd_trade_avg t
+              ON t.sigungu_cd = p.sigungu_cd AND t.emd = p.emd
       WHERE p.pnu = $1`,
     [pnu],
   );
@@ -107,14 +113,21 @@ export async function getParcel(pnu: string): Promise<Parcel | null> {
     역까지의 직선거리.
     geography로 캐스팅해야 미터가 나온다 — 4326 그대로 재면 도(degree) 단위라
     값이 무의미해진다.
-    역이 9개뿐이라 한 번의 쿼리로 전부 재고 가까운 순으로 자른다.
+    역 목록이 짧아 한 번의 쿼리로 전부 재고 가까운 순으로 자른다.
+
+    STATION_MAX_M로 자르는 이유는 stations.ts에 아직 일부 노선만 있기 때문이다.
+    자르지 않으면 수원 필지에 40km 밖 양평역이 '가장 가까운 역'으로 붙어
+    사실이 아닌 정보가 된다. 목록이 경기도 전체로 채워지면 이 제한은 자연히 무의미해진다.
   */
   const stationRows = await query<{ idx: string; distance_m: string }>(
-    `SELECT s.idx, ST_Distance(
-              ST_SetSRID(ST_MakePoint(s.lng, s.lat), 4326)::geography,
-              ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
-            ) AS distance_m
-       FROM unnest($3::int[], $4::float8[], $5::float8[]) AS s(idx, lng, lat)
+    `SELECT idx, distance_m FROM (
+       SELECT s.idx, ST_Distance(
+                ST_SetSRID(ST_MakePoint(s.lng, s.lat), 4326)::geography,
+                ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+              ) AS distance_m
+         FROM unnest($3::int[], $4::float8[], $5::float8[]) AS s(idx, lng, lat)
+     ) d
+      WHERE d.distance_m <= ${STATION_MAX_M}
       ORDER BY distance_m
       LIMIT 3`,
     [

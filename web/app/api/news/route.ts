@@ -38,17 +38,20 @@ function toDate(pubDate: string | undefined): string | null {
 }
 
 export async function GET(request: Request) {
-  const emd = new URL(request.url).searchParams.get("emd")?.trim() ?? "";
+  const params = new URL(request.url).searchParams;
+  const emd = params.get("emd")?.trim() ?? "";
+  const sigungu = params.get("sigungu")?.trim() ?? "";
 
   if (!ID || !SECRET) {
     return NextResponse.json({ items: [], reason: "no_credentials" });
   }
 
   /*
-    읍면 이름만으로 검색하면 결과가 거의 없다. 군 단위를 함께 넣어
-    범위를 확보하고, 읍면은 결과 안에서 걸러 관련도를 높인다.
+    읍면동 이름만으로 검색하면 결과가 거의 없고, 같은 이름의 다른 지역 기사가 섞인다.
+    시군구를 함께 넣어 범위를 잡고, 읍면동은 결과 안에서 걸러 관련도를 높인다.
+    시군구는 호출자가 넘긴 필지의 실제 값이다 — 지역명을 여기 적어두지 않는다.
   */
-  const q = `양평군 부동산 ${emd}`.trim();
+  const q = [sigungu, "부동산", emd].filter(Boolean).join(" ");
 
   try {
     const res = await fetch(

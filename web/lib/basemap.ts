@@ -123,7 +123,20 @@ export const ROAD_HUE = 0;
 export const ROAD_SATURATION = 0.3;
 export const ROAD_OPACITY = 1;
 
-/** 양평군 중심. 초기 위치이자 '현재 위치로' 복귀 지점이다. */
-export const YANGPYEONG_CENTER: [number, number] = [127.4874, 37.4917];
-export const INITIAL_ZOOM = 15;
+/**
+ * 서비스 범위의 중심. 초기 위치이자 '현재 위치로' 복귀 지점이다.
+ *
+ * 적재된 경기도 521만 필지의 중심점 평균이다. 지역을 넓히면 이 값도 다시 구한다:
+ *   SELECT avg(ST_X(ST_Centroid(geom))), avg(ST_Y(ST_Centroid(geom))) FROM parcel;
+ */
+export const DEFAULT_CENTER: [number, number] = [127.1266, 37.4495];
+
+/**
+ * 첫 화면 줌.
+ *
+ * 시군구 칩이 보이는 구간(z12.5 미만)으로 연다. 곧바로 필지를 그리는 z15로 열면
+ * 경기도 어딘가의 필지 몇 개만 보여 여기가 어디인지 알 수 없다.
+ * 시세 칩으로 지역을 먼저 고르고 확대해 들어가는 흐름이 자연스럽다.
+ */
+export const INITIAL_ZOOM = 9.2;
 export const MIN_PARCEL_ZOOM = 15;

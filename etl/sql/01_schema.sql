@@ -1,4 +1,4 @@
--- DDoToRo 스키마 (Task 2)
+-- DDoToRo 스키마
 -- 컨테이너 최초 기동 시 1회 자동 실행된다.
 -- 스키마를 바꾸려면 `docker compose down -v`로 볼륨을 지우고 다시 올린다.
 
@@ -7,6 +7,10 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE TABLE parcel (
   -- PNU 19자리. 선행 0이 유실되면 안 되므로 절대 숫자 타입으로 두지 않는다
   pnu           CHAR(19) PRIMARY KEY,
+
+  -- PNU 앞 5자리. 시군구 단위 집계·필터의 조인 키다.
+  -- 이름(sigungu)으로 묶으면 안 된다 — 시도가 다른 동명 시군구가 존재한다
+  sigungu_cd    CHAR(5),
 
   sido          TEXT,                 -- 경기도
   sigungu       TEXT,                 -- 양평군
@@ -25,15 +29,16 @@ CREATE TABLE parcel (
   geom          GEOMETRY(MultiPolygon, 4326) NOT NULL
 );
 
--- 지도 bbox 조회용
-CREATE INDEX idx_parcel_geom ON parcel USING GIST (geom);
+/*
+  인덱스는 여기서 만들지 않는다.
 
--- 읍면동 단위 집계/필터용
-CREATE INDEX idx_parcel_emd ON parcel (sigungu, emd);
+  적재 대상이 시군구 하나(34만 건)에서 시도 전체(520만 건)로 늘면서
+  인덱스를 건 채로 COPY하면 매 행마다 GIST 트리를 갱신하느라 몇 배 느려진다.
+  load_parcels.py가 적재를 마친 뒤 create_indexes()에서 한 번에 만든다.
+  인덱스 정의는 그쪽에 있다.
+*/
 
--- 검색용 ('서종면 245-7' 형태로 들어온다)
-CREATE INDEX idx_parcel_search ON parcel (emd, jibun);
-
-COMMENT ON TABLE  parcel IS '개별공시지가 필지. 양평군(41830)만 적재';
+COMMENT ON TABLE  parcel IS '개별공시지가 필지';
+COMMENT ON COLUMN parcel.sigungu_cd IS 'PNU 앞 5자리 시군구 법정동코드';
 COMMENT ON COLUMN parcel.area_sqm IS 'EPSG:5186 좌표에서 계산한 면적. 원본 제공값과 오차 중앙값 0.71%';
 COMMENT ON COLUMN parcel.price_per_sqm IS '개별공시지가 원/㎡. 연 1회 갱신되는 공시가격이며 실거래 시세가 아니다';

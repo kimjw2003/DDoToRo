@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { SERVICE_AREA } from "@/lib/region";
 
 export const metadata: Metadata = {
-  title: "DDoToRo — 경기 양평군 땅값 조회",
+  title: `DDoToRo — ${SERVICE_AREA.short} 땅값 조회`,
   description:
-    "지도에서 필지를 누르면 공시지가와 면적, 지목을 보여줍니다. 경기도 양평군 개별공시지가 조회 서비스.",
+    `지도에서 필지를 누르면 공시지가와 면적, 지목을 보여줍니다. ` +
+    `${SERVICE_AREA.name} 개별공시지가 조회 서비스.`,
 };
 
 export default function RootLayout({
