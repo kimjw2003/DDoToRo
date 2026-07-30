@@ -38,6 +38,26 @@ JIMOK = {
 
 COLUMNS = "A0 A2 A3 A5 A6 A7 A9 A15".split()
 
+"""
+연도별 공시지가가 담긴 컬럼.
+
+원본은 한 행에 당해와 과거 4개년을 나란히 들고 있다. 컬럼명만으로는 어느 해인지
+알 수 없어 값으로 판정했다 — 인접 연도를 비교하면 A16>A17>A18 순으로 과거이고,
+A18(2023)이 A19(2022)보다 낮은 필지가 95.8%다. 2023년은 전국적으로 공시지가가
+하락한 해이므로 이 배열이 맞다.
+
+기준연도(A7)는 2026 하나뿐이라 A9가 당해다.
+과거 자료를 더 받아 10년치가 되면 여기에 항목만 추가하면 된다.
+"""
+PRICE_YEAR_COLUMNS = {
+    "A9": 2026,
+    "A16": 2025,
+    "A17": 2024,
+    "A18": 2023,
+    "A19": 2022,
+}
+
+
 
 def shp_files() -> list[Path]:
     files = [DATA_DIR / "AL_D150_41_20260526.shp"]
@@ -109,6 +129,10 @@ def main() -> None:
 
     with psycopg.connect(dsn) as conn:
         with conn.cursor() as cur:
+            # 이력 테이블은 컨테이너 최초 기동 이후에 추가된 것이라 여기서 만든다
+            cur.execute((Path(__file__).parent / "sql" / "03_price_history.sql").read_text())
+            conn.commit()
+
             cur.execute("SELECT count(*) FROM parcel")
             if cur.fetchone()[0] > 0:
                 sys.exit("parcel 테이블이 비어있지 않다. 재적재하려면 TRUNCATE 후 실행할 것.")
@@ -130,6 +154,7 @@ def main() -> None:
             gdf = gdf.to_crs(4326)
 
             rows = []
+            history: list[tuple[str, int, int | None]] = []
             for r in gdf.itertuples(index=False):
                 geom = r.geometry
                 if geom is None or geom.is_empty:
@@ -158,8 +183,10 @@ def main() -> None:
                 if price is None:
                     stats["지가_없음"] += 1
 
+                pnu = getattr(r, "A0", None)
+
                 rows.append((
-                    getattr(r, "A0", None),
+                    pnu,
                     sido, sigungu, emd, ri,
                     make_jibun(getattr(r, "A3", None), getattr(r, "A5", None)),
                     jimok,
@@ -169,6 +196,14 @@ def main() -> None:
                     geom.wkb_hex,
                 ))
 
+                # 한 행에 나란히 있는 연도별 지가를 연도마다 한 행으로 펼친다
+                if pnu:
+                    for col, year in PRICE_YEAR_COLUMNS.items():
+                        v = to_int(getattr(r, col, None))
+                        if v is None:
+                            stats[f"이력_결측_{year}"] += 1
+                        history.append((pnu, year, v))
+
             with conn.cursor() as cur:
                 with cur.copy(
                     "COPY parcel (pnu, sido, sigungu, emd, ri, jibun, jimok, "
@@ -176,9 +211,17 @@ def main() -> None:
                 ) as copy:
                     for row in rows:
                         copy.write_row(row)
+
+                # 이력은 parcel을 참조하므로 반드시 필지를 먼저 넣은 뒤에 넣는다
+                with cur.copy(
+                    "COPY parcel_price_history (pnu, price_year, price_per_sqm) FROM STDIN"
+                ) as copy:
+                    for row in history:
+                        copy.write_row(row)
             conn.commit()
 
             stats["적재"] += len(rows)
+            stats["이력_적재"] += len(history)
             print(f"{path.name:35s} {len(rows):>7,}건 적재 (누적 {stats['적재']:,})", flush=True)
 
         cleanup(conn)

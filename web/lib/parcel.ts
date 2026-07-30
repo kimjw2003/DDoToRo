@@ -15,6 +15,13 @@ export type Parcel = {
   total_price: number | null;
   lng: number;
   lat: number;
+  /**
+   * 연도별 공시지가. 연도 오름차순.
+   *
+   * 지금은 5개년(2022~2026)이지만 과거 자료를 더 확보하면 그대로 늘어난다.
+   * 화면에서 연도 수를 고정으로 가정하지 말 것.
+   */
+  price_history: { year: number; price_per_sqm: number | null }[];
   geometry: {
     type: "Polygon" | "MultiPolygon";
     coordinates: number[][][] | number[][][][];
@@ -44,6 +51,7 @@ type Row = {
   lng: number;
   lat: number;
   geometry: string;
+  price_history: { year: number; price_per_sqm: number | null }[] | null;
   // count(*)와 NUMERIC은 pg가 문자열로 준다
   deal_count: string | null;
   avg_price_per_sqm: string | null;
@@ -75,7 +83,14 @@ export async function getParcel(pnu: string): Promise<Parcel | null> {
             ST_Y(ST_Centroid(p.geom)) AS lat,
             ST_AsGeoJSON(p.geom) AS geometry,
             t.deal_count, t.avg_price_per_sqm, t.median_price_per_sqm,
-            t.from_ym, t.to_ym
+            t.from_ym, t.to_ym,
+            -- 연도 수가 늘어나도 쿼리를 고치지 않도록 집계로 받는다
+            (SELECT json_agg(json_build_object(
+                      'year', h.price_year,
+                      'price_per_sqm', h.price_per_sqm)
+                    ORDER BY h.price_year)
+               FROM parcel_price_history h
+              WHERE h.pnu = p.pnu) AS price_history
        FROM parcel p
        LEFT JOIN emd_trade_avg t ON t.emd = p.emd
       WHERE p.pnu = $1`,
@@ -100,6 +115,8 @@ export async function getParcel(pnu: string): Promise<Parcel | null> {
     lng: r.lng,
     lat: r.lat,
     geometry: JSON.parse(r.geometry),
+    // 이력이 하나도 없으면 json_agg가 null을 준다
+    price_history: r.price_history ?? [],
     emd_trade_avg:
       r.deal_count === null
         ? null
