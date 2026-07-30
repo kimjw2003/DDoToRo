@@ -104,10 +104,14 @@ function pyeongMan(perSqm: number | null): string {
   return Math.round((perSqm * PYEONG) / 10_000).toLocaleString();
 }
 
-/** 칩이 차지하는 대략적 화면 크기(px). 겹침 판정에 쓴다 */
+/**
+ * 칩이 차지하는 화면 크기(px). 겹침 판정에 쓴다.
+ * 브라우저에서 실제로 재어 넣은 값이다(시군구 174×61 · 읍면동 108×52).
+ * 눈대중으로 적으면 세로로 겹치거나 멀쩡한 칩까지 지워진다.
+ */
 const CHIP_BOX = {
-  county: { w: 168, h: 64 },
-  town: { w: 138, h: 52 },
+  county: { w: 178, h: 62 },
+  town: { w: 114, h: 54 },
 } as const;
 
 /**
@@ -192,9 +196,14 @@ function priceChip(opts: {
 
   const priceRow = document.createElement("div");
   priceRow.className = "flex items-baseline gap-1";
+  /*
+    금액 크기는 타입 스케일 안에서 고른다(DESIGN.md).
+    28/20px은 스케일에 없는 값이었고 지도 위에서 과하게 컸다 —
+    시군구는 '지번'과 같은 22px, 읍면동은 한 단 아래 17px로 둔다.
+  */
   const value = document.createElement("span");
   value.className = `tnum font-serif-num leading-[1.15] text-[var(--ink)] ${
-    large ? "text-[28px]" : "text-[20px]"
+    large ? "text-[22px]" : "text-[17px]"
   }`;
   value.textContent = pyeongMan(perSqm);
   const unit = document.createElement("span");
