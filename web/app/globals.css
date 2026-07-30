@@ -229,6 +229,24 @@ body {
   background: var(--line);
 }
 
+/*
+  작은 토글. 차트 헤더처럼 라벨 없이 단독으로 놓이는 자리에만 쓴다.
+  트랙과 노브 비율은 기본 토글과 같게 유지한다.
+*/
+.switch-sm {
+  width: 44px;
+  height: 26px;
+}
+
+.switch-sm::after {
+  width: 20px;
+  height: 20px;
+}
+
+.switch-sm:checked::after {
+  transform: translateX(18px);
+}
+
 /* 토글은 라벨과 한 행을 이룬다. 행 전체가 클릭 영역이다 */
 .switch-row {
   display: flex;

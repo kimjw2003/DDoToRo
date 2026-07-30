@@ -272,15 +272,14 @@ function PriceTab({ parcel }: { parcel: ParcelDetail }) {
       ) : (
         history.length > 0 && (
           <section className="border-b border-[var(--line)] px-4 py-5">
-            <div className="mb-4 flex flex-wrap items-center gap-3">
+            <div className="mb-4 flex items-center gap-3">
               <h3 className="text-[17px] font-semibold text-[var(--ink)]">
                 공시지가 추이
               </h3>
               <span className="badge">{history.length}년</span>
+              <ChartToggle mode={chartMode} onChange={setChartMode} />
             </div>
             <PriceChart history={history} mode={chartMode} />
-            {/* 토글은 라벨과 한 행을 이룬다. 행 전체가 클릭 영역이다 */}
-            <ChartToggle mode={chartMode} onChange={setChartMode} />
           </section>
         )
       )}
@@ -389,9 +388,8 @@ function LineOverlay({
 /**
  * 막대 ↔ 선 전환.
  *
- * 규격은 DESIGN.md의 .switch / .switch-row를 그대로 따른다.
- * 켜고 끄는 순간 바로 반영되므로 확인 버튼이 없는 토글이 맞고,
- * 라벨만으로 "끄면 무엇이 되는지" 알 수 없어 보조 설명을 붙였다.
+ * 차트 바로 위에 붙어 무엇을 바꾸는지가 자명하므로 화면에는 라벨을 두지 않는다.
+ * 다만 눈으로 볼 수 없는 사용자에게는 단서가 사라지므로 aria-label과 title은 남긴다.
  */
 function ChartToggle({
   mode,
@@ -400,20 +398,20 @@ function ChartToggle({
   mode: ChartMode;
   onChange: (m: ChartMode) => void;
 }) {
+  const label = mode === "line" ? "선 그래프 (끄면 막대)" : "선 그래프로 보기";
   return (
-    <label className="switch-row">
-      <span className="switch-text">
-        <span className="switch-label">선 그래프</span>
-        <span className="switch-help">끄면 막대로 표시합니다</span>
-      </span>
+    // .switch가 margin:0을 지정하므로 정렬은 래퍼가 맡는다
+    <span className="ml-auto inline-flex">
       <input
-        className="switch"
+        className="switch switch-sm"
         type="checkbox"
         role="switch"
+        aria-label={label}
+        title={label}
         checked={mode === "line"}
         onChange={(e) => onChange(e.target.checked ? "line" : "bar")}
       />
-    </label>
+    </span>
   );
 }
 
