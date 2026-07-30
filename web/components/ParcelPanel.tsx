@@ -10,7 +10,9 @@ import {
   formatRegion,
   formatWon,
   formatWonPlain,
+  formatYm,
 } from "@/lib/format";
+import { RAMP } from "@/lib/priceRamp";
 
 export type ParcelDetail = {
   pnu: string;
@@ -24,6 +26,8 @@ export type ParcelDetail = {
   price_per_sqm: number | null;
   price_year: number | null;
   total_price: number | null;
+  /** 연도 수는 가변이다. 길이를 고정으로 가정하지 말 것 */
+  price_history?: { year: number; price_per_sqm: number | null }[];
   geometry: ParcelGeometry | null;
   emd_trade_avg: {
     emd: string | null;
@@ -192,7 +196,7 @@ export default function ParcelPanel({
       {/* ── 탭 내용. 여기만 스크롤한다 ── */}
       <div role="tabpanel" className="min-h-0 flex-1 overflow-y-auto">
         {tab === "info" && <InfoTab parcel={parcel} />}
-        {tab === "price" && <PriceTab />}
+        {tab === "price" && <PriceTab parcel={parcel} />}
         {tab === "near" && <NearTab />}
       </div>
 
@@ -248,9 +252,145 @@ function InfoTab({ parcel }: { parcel: ParcelDetail }) {
   );
 }
 
-/** 시세 추이·실거래는 Task 9 이후에 붙인다. 그럴듯한 수치를 지어내지 않는다. */
-function PriceTab() {
-  return <EmptyTab label="시세" badge="데이터 연동 전" />;
+function PriceTab({ parcel }: { parcel: ParcelDetail }) {
+  const history = parcel.price_history ?? [];
+  const trade = parcel.emd_trade_avg;
+
+  return (
+    <>
+      {parcel.price_per_sqm === null ? (
+        <section className="border-b border-[var(--line)] px-4 py-5">
+          <p className="note">
+            이 필지는 공시지가 정보가 없습니다. 전체 필지의 0.448%가 여기에
+            해당합니다.
+          </p>
+        </section>
+      ) : (
+        history.length > 0 && (
+          <section className="border-b border-[var(--line)] px-4 py-5">
+            <div className="mb-4 flex flex-wrap items-center gap-3">
+              <h3 className="text-[17px] font-semibold text-[var(--ink)]">
+                공시지가 추이
+              </h3>
+              <span className="badge">{history.length}년</span>
+            </div>
+            <PriceChart history={history} />
+          </section>
+        )
+      )}
+
+      <section className="px-4 py-5">
+        <h3 className="mb-4 text-[17px] font-semibold text-[var(--ink)]">
+          {trade?.emd ?? parcel.emd} 지역 실거래
+        </h3>
+
+        {trade && trade.deal_count > 0 ? (
+          <>
+            {/* 평당을 먼저, 크게. 일반인은 평으로 사고한다 */}
+            <div className="flex flex-wrap items-baseline gap-2.5">
+              <span className="font-serif-num text-[22px] text-[var(--ink)]">
+                {formatWonPlain(
+                  (trade.median_price_per_sqm ?? 0) * 3.3058,
+                )}
+              </span>
+              <span className="text-[14px] text-[var(--ink-mid)]">
+                평당 중앙값 · {trade.deal_count.toLocaleString()}건
+              </span>
+            </div>
+            <p className="tnum mt-0.5 text-[14px] text-[var(--ink-mid)]">
+              ㎡당 {formatWonPlain(trade.median_price_per_sqm)} ·{" "}
+              {formatYm(trade.from_ym)}~{formatYm(trade.to_ym)}
+            </p>
+
+            {/*
+              이 문구를 빼면 사용자가 자기 땅이 그 값에 팔렸다고 오해한다.
+              값과 반드시 같은 화면에 함께 보여야 한다
+            */}
+            <p className="note mt-3.5">
+              <strong className="font-semibold text-[var(--ink)]">
+                이 필지의 거래 기록이 아닙니다.
+              </strong>
+              <br />
+              정부가 지번을 일부만 공개해 지역 평균으로만 보여드립니다.
+            </p>
+          </>
+        ) : (
+          <p className="text-[14px] text-[var(--ink-mid)]">
+            최근 거래 기록이 없습니다
+          </p>
+        )}
+      </section>
+    </>
+  );
+}
+
+/**
+ * 연도별 공시지가 막대 차트.
+ *
+ * SVG 텍스트로 그리지 않는다 — viewBox가 줄면 글자도 같이 줄어 14px 하한이 깨진다.
+ * 막대만 비율로 그리고 라벨은 HTML로 둔다. 연도 수는 배열 길이를 따라가므로
+ * 5년이든 10년이든 그대로 동작한다.
+ */
+function PriceChart({
+  history,
+}: {
+  history: { year: number; price_per_sqm: number | null }[];
+}) {
+  const values = history
+    .map((h) => h.price_per_sqm)
+    .filter((v): v is number => v !== null);
+  if (values.length === 0) return null;
+
+  const max = Math.max(...values);
+  const first = history.find((h) => h.price_per_sqm !== null);
+  const last = [...history].reverse().find((h) => h.price_per_sqm !== null);
+  const delta =
+    first?.price_per_sqm && last?.price_per_sqm
+      ? Math.round((last.price_per_sqm / first.price_per_sqm - 1) * 100)
+      : null;
+
+  return (
+    <>
+      <div className="flex h-[150px] items-end gap-1.5">
+        {history.map((h, i) => {
+          const v = h.price_per_sqm;
+          const isLast = i === history.length - 1;
+          return (
+            <div
+              key={h.year}
+              className="flex min-w-0 flex-1 flex-col items-center justify-end"
+            >
+              <span className="tnum mb-1 text-[14px] leading-none text-[var(--ink-mid)]">
+                {v === null ? "—" : Math.round(v / 1000).toLocaleString()}
+              </span>
+              <div
+                className="w-full"
+                style={{
+                  // 최솟값도 막대가 보이도록 바닥을 깔아준다
+                  height: v === null ? 4 : `${Math.max(6, (v / max) * 108)}px`,
+                  backgroundColor: isLast ? RAMP[4] : RAMP[2],
+                }}
+              />
+              <span className="tnum mt-1.5 text-[14px] leading-none text-[var(--ink-mid)]">
+                {h.year}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="mt-3 text-[14px] leading-[1.6] text-[var(--ink-mid)]">
+        {delta !== null && first && (
+          <>
+            {first.year}년 대비 {delta >= 0 ? "+" : ""}
+            {delta}% · 단위 ㎡당 천원
+            <br />
+          </>
+        )}
+        2023년은 전국적으로 공시지가가 하락한 해입니다.
+      </p>
+    </>
+  );
 }
 
 function NearTab() {
