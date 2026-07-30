@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import ParcelSilhouette, { type ParcelGeometry } from "./ParcelSilhouette";
 import {
@@ -690,7 +690,71 @@ function NearTab({ parcel }: { parcel: ParcelDetail }) {
           가장 가까운 시설 한 곳까지의 거리를 보여줄 예정입니다.
         </p>
       </section>
+
+      <LocalNews emd={parcel.emd} />
     </>
+  );
+}
+
+/**
+ * 지역 부동산 뉴스.
+ *
+ * 개별 필지와 직접 관련이 없으므로 비중을 낮춘다 — 탭 최하단, 바탕 한 단 낮춤,
+ * 제목은 굵기 500에 --ink-mid. 역·시설보다 앞서 보이면 안 된다.
+ * 결과가 없거나 API가 실패하면 섹션 자체를 감춘다. 에러 배너를 띄우지 않는다.
+ */
+function LocalNews({ emd }: { emd: string | null }) {
+  const [items, setItems] = useState<
+    { title: string; link: string; source_date: string | null }[] | null
+  >(null);
+
+  useEffect(() => {
+    if (!emd) return;
+    let alive = true;
+    fetch(`/api/news?emd=${encodeURIComponent(emd)}`)
+      .then((r) => (r.ok ? r.json() : { items: [] }))
+      .then((j) => {
+        if (alive) setItems(j.items ?? []);
+      })
+      .catch(() => {
+        if (alive) setItems([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [emd]);
+
+  // 로딩 중이거나 결과가 없으면 아무것도 그리지 않는다
+  if (!items || items.length === 0) return null;
+
+  return (
+    <section className="border-t border-[var(--line)] bg-[var(--paper)] px-4 py-5">
+      <h3 className="mb-3 text-[16px] font-medium text-[var(--ink-mid)]">
+        {emd} 부동산 소식
+      </h3>
+      <ul>
+        {items.map((n, i) => (
+          <li key={n.link} className={i > 0 ? "mt-3" : ""}>
+            <a
+              href={n.link}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[14px] leading-[1.5] text-[var(--ink)] underline decoration-1 underline-offset-[3px]"
+            >
+              {n.title}
+            </a>
+            {n.source_date && (
+              <p className="tnum mt-0.5 text-[14px] text-[var(--ink-soft)]">
+                {n.source_date}
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-[14px] leading-[1.6] text-[var(--ink-soft)]">
+        지역 단위 검색 결과입니다. 이 필지에 대한 내용이 아닙니다.
+      </p>
+    </section>
   );
 }
 
