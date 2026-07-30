@@ -28,6 +28,8 @@ export type ParcelDetail = {
   total_price: number | null;
   /** 연도 수는 가변이다. 길이를 고정으로 가정하지 말 것 */
   price_history?: { year: number; price_per_sqm: number | null }[];
+  /** 가까운 순. 직선거리(m)다 */
+  nearby_stations?: { name: string; line: string; distance_m: number }[];
   geometry: ParcelGeometry | null;
   emd_trade_avg: {
     emd: string | null;
@@ -197,7 +199,7 @@ export default function ParcelPanel({
       <div role="tabpanel" className="min-h-0 flex-1 overflow-y-auto">
         {tab === "info" && <InfoTab parcel={parcel} />}
         {tab === "price" && <PriceTab parcel={parcel} />}
-        {tab === "near" && <NearTab />}
+        {tab === "near" && <NearTab parcel={parcel} />}
       </div>
 
       {/* ── 고정 푸터 ── */}
@@ -527,17 +529,149 @@ function PriceChart({
   );
 }
 
-function NearTab() {
-  return <EmptyTab label="주변" badge="데이터 연동 전" />;
-}
+/**
+ * 카테고리 아이콘.
+ *
+ * 색을 배정하지 않는다 — 채도는 가격만 뜻한다.
+ * 1.7px 단선에 currentColor를 써서 주변 텍스트와 같은 무채색으로 읽힌다.
+ */
+function CategoryIcon({ kind }: { kind: string }) {
+  const paths: Record<string, React.ReactNode> = {
+    station: (
+      <>
+        <rect x="4.5" y="3.5" width="11" height="9" rx="1.5" />
+        <path d="M4.5 9.5h11M7 16l1.5-3M13 16l-1.5-3" />
+        <circle cx="7.5" cy="6.5" r="0.6" fill="currentColor" stroke="none" />
+      </>
+    ),
+    school: <path d="M10 3.5l6.5 3-6.5 3-6.5-3 6.5-3zM6 8.5v4c0 1 1.8 2 4 2s4-1 4-2v-4" />,
+    hospital: (
+      <>
+        <rect x="3.5" y="4.5" width="13" height="11" rx="1.5" />
+        <path d="M10 7.5v5M7.5 10h5" />
+      </>
+    ),
+    store: <path d="M4 7.5h12l-1 8H5l-1-8zM7 7.5V6a3 3 0 016 0v1.5" />,
+    office: (
+      <>
+        <path d="M4.5 16V5.5l5.5-2 5.5 2V16" />
+        <path d="M8 16v-3.5h4V16M7.5 8h1.5M11 8h1.5" />
+      </>
+    ),
+    bus: (
+      <>
+        <rect x="4.5" y="3.5" width="11" height="9" rx="1.5" />
+        <path d="M4.5 9h11M7 15.5v-3M13 15.5v-3" />
+      </>
+    ),
+  };
 
-function EmptyTab({ label, badge }: { label: string; badge: string }) {
   return (
-    <div className="px-6 py-10 text-center">
-      <span className="badge">{badge}</span>
-      <p className="mt-4 text-[14px] leading-[1.7] text-[var(--ink-mid)]">
-        {label} 정보는 준비 중입니다.
-      </p>
-    </div>
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="shrink-0 text-[var(--ink-mid)]"
+      aria-hidden="true"
+    >
+      {paths[kind] ?? paths.office}
+    </svg>
   );
 }
+
+/** 직선 1.8km (차 5분 추정) — 도보 시간은 쓰지 않는다 */
+function distanceText(m: number): string {
+  const km = m / 1000;
+  // 시골 국도 기준 대략 35km/h로 잡는다. 어디까지나 추정이라 문구로 밝힌다
+  const min = Math.max(1, Math.round((km / 35) * 60));
+  return `${km.toFixed(1)}km · 차 ${min}분 추정`;
+}
+
+function NearTab({ parcel }: { parcel: ParcelDetail }) {
+  const stations = parcel.nearby_stations ?? [];
+
+  return (
+    <>
+      <section className="border-b border-[var(--line)] px-4 py-5">
+        <h3 className="mb-4 text-[17px] font-semibold text-[var(--ink)]">
+          가까운 역
+        </h3>
+
+        {stations.length === 0 ? (
+          <p className="text-[14px] text-[var(--ink-mid)]">역 정보가 없습니다</p>
+        ) : (
+          <ul>
+            {stations.map((s, i) => (
+              <li
+                key={s.name}
+                className={`flex items-center gap-3 py-3 ${
+                  i > 0 ? "border-t border-[var(--line)]" : ""
+                }`}
+              >
+                <CategoryIcon kind="station" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[16px] text-[var(--ink)]">{s.name}</p>
+                  <p className="text-[14px] text-[var(--ink-mid)]">{s.line}</p>
+                </div>
+                <p className="tnum shrink-0 text-right text-[14px] text-[var(--ink-mid)]">
+                  {distanceText(s.distance_m)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <p className="mt-3 text-[14px] leading-[1.6] text-[var(--ink-soft)]">
+          직선거리입니다. 실제 도로 거리와 다를 수 있습니다.
+        </p>
+      </section>
+
+      {/*
+        공공시설은 아직 데이터가 없다.
+        배지 없이 그럴듯한 수치를 노출하지 않는다 — 어느 항목이 실측인지
+        사용자가 구분할 수 없게 된다
+      */}
+      <section className="px-4 py-5">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <h3 className="text-[17px] font-semibold text-[var(--ink)]">
+            주변 시설
+          </h3>
+          <span className="badge">공공데이터 연동 전</span>
+        </div>
+
+        <ul>
+          {[
+            { kind: "school", name: "초등학교" },
+            { kind: "hospital", name: "보건지소" },
+            { kind: "store", name: "마트" },
+            { kind: "office", name: "관공서" },
+            { kind: "bus", name: "버스정류장" },
+          ].map((f, i) => (
+            <li
+              key={f.kind}
+              className={`flex items-center gap-3 py-3 ${
+                i > 0 ? "border-t border-[var(--line)]" : ""
+              }`}
+            >
+              <CategoryIcon kind={f.kind} />
+              <p className="min-w-0 flex-1 text-[16px] text-[var(--ink-soft)]">
+                {f.name}
+              </p>
+              <p className="shrink-0 text-[14px] text-[var(--ink-soft)]">—</p>
+            </li>
+          ))}
+        </ul>
+
+        <p className="mt-3 text-[14px] leading-[1.6] text-[var(--ink-mid)]">
+          가장 가까운 시설 한 곳까지의 거리를 보여줄 예정입니다.
+        </p>
+      </section>
+    </>
+  );
+}
+

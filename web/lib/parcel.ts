@@ -1,4 +1,5 @@
 import { query } from "@/lib/db";
+import { STATIONS } from "@/lib/stations";
 
 /** 필지 상세. API 라우트와 SSR 페이지가 같은 형태를 쓴다. */
 export type Parcel = {
@@ -22,6 +23,8 @@ export type Parcel = {
    * 화면에서 연도 수를 고정으로 가정하지 말 것.
    */
   price_history: { year: number; price_per_sqm: number | null }[];
+  /** 가까운 순 3개. 직선거리(m)만 준다 — 도로 경로가 아니다 */
+  nearby_stations: { name: string; line: string; distance_m: number }[];
   geometry: {
     type: "Polygon" | "MultiPolygon";
     coordinates: number[][][] | number[][][][];
@@ -100,6 +103,38 @@ export async function getParcel(pnu: string): Promise<Parcel | null> {
   const r = rows[0];
   if (!r) return null;
 
+  /*
+    역까지의 직선거리.
+    geography로 캐스팅해야 미터가 나온다 — 4326 그대로 재면 도(degree) 단위라
+    값이 무의미해진다.
+    역이 9개뿐이라 한 번의 쿼리로 전부 재고 가까운 순으로 자른다.
+  */
+  const stationRows = await query<{ idx: string; distance_m: string }>(
+    `SELECT s.idx, ST_Distance(
+              ST_SetSRID(ST_MakePoint(s.lng, s.lat), 4326)::geography,
+              ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+            ) AS distance_m
+       FROM unnest($3::int[], $4::float8[], $5::float8[]) AS s(idx, lng, lat)
+      ORDER BY distance_m
+      LIMIT 3`,
+    [
+      r.lng,
+      r.lat,
+      STATIONS.map((_, i) => i),
+      STATIONS.map((s) => s.lng),
+      STATIONS.map((s) => s.lat),
+    ],
+  );
+
+  const nearby_stations = stationRows.map((s) => {
+    const st = STATIONS[Number(s.idx)];
+    return {
+      name: st.name,
+      line: st.line,
+      distance_m: Math.round(Number(s.distance_m)),
+    };
+  });
+
   return {
     pnu: r.pnu,
     sido: r.sido,
@@ -117,6 +152,7 @@ export async function getParcel(pnu: string): Promise<Parcel | null> {
     geometry: JSON.parse(r.geometry),
     // 이력이 하나도 없으면 json_agg가 null을 준다
     price_history: r.price_history ?? [],
+    nearby_stations,
     emd_trade_avg:
       r.deal_count === null
         ? null
