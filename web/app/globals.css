@@ -338,6 +338,110 @@ body {
   }
 }
 
+/*
+  ── /land/[pnu] 단독 페이지 ──────────────────────
+  검색 유입 전용이라 자바스크립트 없이 전부 렌더된다.
+  앱 화면이 아니라 공개 문서에 가깝다.
+*/
+.doc {
+  max-width: 728px;
+  margin: 0 auto;
+  padding: 32px 24px 40px;
+}
+
+.doc-head {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  gap: 20px;
+  align-items: start;
+  margin: 16px 0 24px;
+}
+
+/* 총액 블록. 위는 먹선, 아래는 실선으로 문서처럼 가둔다 */
+.doc-price {
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
+}
+
+.doc-blk {
+  padding: 32px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+/*
+  차트를 SVG가 아니라 HTML로 그린다.
+  SVG는 viewBox가 줄면 글자도 함께 줄어 14px 하한이 깨진다.
+  연도 수가 가변이므로 열 수는 인라인 스타일로 넘긴다.
+*/
+.bars {
+  display: grid;
+  max-width: 560px;
+  align-items: end;
+}
+
+.bars .col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bars .v {
+  font-size: 14px;
+  margin-bottom: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bars .b {
+  width: 72%;
+  background: var(--p3);
+}
+
+.bars .col:last-child .b {
+  background: var(--p5);
+}
+
+.bars .y {
+  font-size: 14px;
+  color: var(--ink-mid);
+  width: 100%;
+  text-align: center;
+  border-top: 1px solid var(--line-strong);
+  padding-top: 6px;
+  letter-spacing: 0.012em;
+}
+
+/*
+  이 페이지만 좁은 폭 폴백을 둔다 — 검색 유입이라 모바일 트래픽이 그대로 들어온다.
+  모바일 UI를 설계하는 것이 아니라 레이아웃이 깨지지 않을 정도만 유지한다.
+*/
+@media (max-width: 560px) {
+  .doc-head {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 인쇄하면 문서 한 장이 된다. 화면용 크롬은 뺀다 */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .doc {
+    max-width: none;
+    padding: 0;
+  }
+
+  .doc-blk {
+    padding: 18px 0;
+    break-inside: avoid;
+  }
+}
+
 /* 가격 정보 없는 필지 — 색을 하나 더 늘리지 않고 사선으로 구분한다 */
 .hatch-none {
   background: repeating-linear-gradient(
