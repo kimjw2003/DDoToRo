@@ -194,6 +194,84 @@ html, body {
 .ramp { display: flex; height: 12px; }
 .ramp > i { flex: 1; }
 
+/* ── 토글 ───────────────────────────────────
+   켜짐은 강조색(--accent)으로 채운다. 주 버튼과 같은 색이며 램프 최상단과 같은 색족이라
+   화면의 색 이야기는 여전히 하나다.
+   이 시스템에서 둥근 형태를 쓰는 유일한 요소다 — 손으로 미는 물리 스위치의 관용 형태이고,
+   각진 요소들 사이에서 "이건 눌러 바꾸는 것"이라는 신호가 된다. 의도된 예외다. */
+.switch {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 30px;
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-str);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  background: var(--muted);
+  border-radius: 50%;
+  transition: transform 140ms ease, background 140ms ease;
+}
+.switch:hover, .switch.is-hover { border-color: var(--fg); }
+.switch:checked, .switch.is-on { background: var(--accent); border-color: var(--accent); }
+.switch:checked:hover, .switch.is-on.is-hover { background: var(--accent-ink); border-color: var(--accent-ink); }
+.switch:checked::after, .switch.is-on::after { transform: translateX(22px); background: var(--surface); }
+.switch.is-focus { outline: 2px solid var(--fg); outline-offset: 2px; }
+.switch:disabled {
+  background: var(--sunken);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+.switch:disabled::after { background: var(--border); }
+
+/* 토글은 라벨과 한 행을 이룬다. 행 전체가 클릭 영역이다 */
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  min-height: var(--tap);
+  padding: var(--sp-3) 0;
+  cursor: pointer;
+}
+.switch-row > .switch-text { flex: 1; min-width: 0; }
+.switch-label { display: block; font-size: 16px; line-height: 1.4; }
+.switch-help { display: block; font-size: 14px; line-height: 1.5; color: var(--muted); margin-top: 2px; }
+.switch-row:has(.switch:disabled) { cursor: not-allowed; }
+.switch-row:has(.switch:disabled) .switch-label,
+.switch-row:has(.switch:disabled) .switch-help { color: var(--hint); }
+
+/* ── 2분할 세그먼트 ─────────────────────────
+   값이 둘 다 이름을 가질 때는 토글 대신 이것을 쓴다 (평 / ㎡).
+   토글은 "끔"이 무엇인지 라벨 하나로 유추해야 하므로 켬·끔이 명확한 경우에만 쓴다 */
+.seg { display: inline-flex; border: 1px solid var(--border-str); }
+.seg-btn {
+  min-height: var(--tap);
+  padding: 0 var(--sp-5);
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--surface);
+  border: 0;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.seg-btn + .seg-btn { border-left: 1px solid var(--border-str); }
+.seg-btn:hover { background: var(--sunken); color: var(--fg); }
+.seg-btn[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 0ms !important; animation: none !important; }
 }

@@ -69,6 +69,19 @@
   ul.rules code { font-family: var(--font-mono); font-size: 14px; background: var(--sunken);
                   border: 1px solid var(--border); padding: 0 4px; }
   .nav-back { display: inline-block; margin-top: var(--sp-8); }
+
+  /* 토글 스펙 시트 */
+  .states { display: flex; gap: var(--sp-8); flex-wrap: wrap; align-items: flex-start; }
+  .state { display: flex; flex-direction: column; gap: var(--sp-3); align-items: flex-start; }
+  .state .cap { font-family: var(--font-mono); font-size: 14px; color: var(--muted); letter-spacing: 0.02em; }
+  .usebox { border: 1px solid var(--border); background: var(--surface); padding: 0 var(--sp-5); max-width: 520px; }
+  .usebox .switch-row + .switch-row { border-top: 1px solid var(--border); }
+  .specs-t { width: 100%; border-collapse: collapse; font-size: 16px; max-width: 620px; }
+  .specs-t th, .specs-t td { text-align: left; padding: var(--sp-2) var(--sp-4) var(--sp-2) 0;
+                             border-bottom: 1px solid var(--border); }
+  .specs-t th { font-size: 14px; font-weight: 600; color: var(--muted); letter-spacing: 0.012em; }
+  .specs-t td:first-child { width: 168px; }
+  .specs-t code { font-family: var(--font-mono); font-size: 14px; }
 </style>
 </head>
 <body>
@@ -190,7 +203,7 @@
   <!-- ── 컴포넌트 ─────────────────────── -->
   <section data-od-id="ds-components">
     <h2>컴포넌트</h2>
-    <p class="sub">그림자·라운드·그라디언트를 쓰지 않는다. 유일한 예외는 주 버튼의 1px 하단 입체다.</p>
+    <p class="sub">그림자·라운드·그라디언트를 쓰지 않는다. 예외는 둘 — 주 버튼의 1px 하단 입체와 토글의 둥근 트랙이다.</p>
     <div class="comps">
       <div class="comp">
         <div class="comp-lab">button</div>
@@ -245,6 +258,97 @@
         </dl>
       </div>
     </div>
+  </section>
+
+  <!-- ── 토글 ─────────────────────────── -->
+  <section data-od-id="ds-switch">
+    <h2>토글</h2>
+    <p class="sub">
+      켜짐은 <strong>강조색으로 채운다.</strong> 주 버튼과 같은 색이고 가격 램프 최상단(<code
+      style="font-family:var(--font-mono);font-size:14px">--p5</code>)과 같은 색족이라,
+      화면에 채도가 하나 더 늘어도 색 이야기는 여전히 하나다. 초록·파랑 같은 시스템 밖의 색은 쓰지 않는다 —
+      그건 사용자가 가격 신호로 오독한다.
+      형태는 <strong>둥근 트랙 + 원형 노브</strong>다. 이 시스템에서 라운드를 쓰는 유일한 요소이며,
+      각진 것들 사이에서 “이건 밀어서 바꾸는 것”이라는 신호가 된다.
+    </p>
+    <div class="note" style="max-width:64ch;margin-bottom:var(--sp-6)">
+      <strong>규칙 두 개가 이 컴포넌트에서 열린다.</strong><br>
+      ① 채도를 쓰는 곳이 가격 램프 · 주 버튼 · <strong>토글 켜짐</strong> 셋이 된다.
+      주 버튼은 화면당 1개지만 토글은 한 그룹 안에서 개수를 제한하지 않는다 — 같은 목록이라 하나의 덩어리로 읽힌다.<br>
+      ② 라운드 금지의 <strong>유일한 예외</strong>다. 버튼·배지·카드·입력은 각진 채로 둔다.
+    </div>
+
+    <h3 class="blk">상태</h3>
+    <div class="states" data-od-id="switch-states">
+      <div class="state"><input class="switch" type="checkbox" role="switch" aria-label="꺼짐"><span class="cap">off</span></div>
+      <div class="state"><input class="switch" type="checkbox" role="switch" checked aria-label="켜짐"><span class="cap">on</span></div>
+      <div class="state"><input class="switch is-hover" type="checkbox" role="switch" aria-label="꺼짐 hover"><span class="cap">off · hover</span></div>
+      <div class="state"><input class="switch is-focus" type="checkbox" role="switch" checked aria-label="켜짐 focus"><span class="cap">on · focus</span></div>
+      <div class="state"><input class="switch" type="checkbox" role="switch" disabled aria-label="사용 불가"><span class="cap">disabled</span></div>
+    </div>
+    <p class="t-label" style="margin-top:var(--sp-4)">
+      hover · focus는 시트에서 보이도록 클래스로 고정한 것이다. 실제로는 <code
+      style="font-family:var(--font-mono);font-size:14px">:hover</code> / <code
+      style="font-family:var(--font-mono);font-size:14px">:focus-visible</code>가 같은 모양을 만든다.
+      위 다섯 개는 전부 실제로 눌린다.
+    </p>
+
+    <h3 class="blk">쓰이는 자리</h3>
+    <div class="usebox" data-od-id="switch-usage">
+      <label class="switch-row">
+        <span class="switch-text">
+          <span class="switch-label">정보 없음 필지 표시</span>
+          <span class="switch-help">공시지가가 없는 0.448%를 사선으로 표시합니다</span>
+        </span>
+        <input class="switch" type="checkbox" role="switch" checked>
+      </label>
+      <label class="switch-row">
+        <span class="switch-text">
+          <span class="switch-label">도로·지명 표시</span>
+          <span class="switch-help">배경지도 위의 도로와 지명 레이어</span>
+        </span>
+        <input class="switch" type="checkbox" role="switch" checked>
+      </label>
+      <label class="switch-row">
+        <span class="switch-text">
+          <span class="switch-label">지하철역 표시</span>
+          <span class="switch-help">역 좌표 연동 후 사용할 수 있습니다</span>
+        </span>
+        <input class="switch" type="checkbox" role="switch" disabled>
+      </label>
+    </div>
+    <ul class="rules" style="margin-top:var(--sp-5)">
+      <li><strong>즉시 적용되는 것에만 쓴다.</strong> 확인 버튼을 눌러야 반영되는 설정이라면 체크박스를 쓴다 —
+          토글은 손을 떼는 순간 적용된다는 약속이다.</li>
+      <li>행 전체가 클릭 영역이다. 최소 높이 44px. 토글만 44px로 키우지 않는다 — 트랙이 커지면 장난감처럼 보인다.</li>
+      <li>보조 설명은 14px <code>--muted</code>. 라벨만으로 “끄면 무엇이 사라지는지”를 알 수 없으면 반드시 붙인다.</li>
+    </ul>
+
+    <h3 class="blk">토글을 쓰지 않는 경우 — 2분할 세그먼트</h3>
+    <p class="sub" style="margin-bottom:var(--sp-4)">
+      양쪽이 모두 이름을 가진 값이면 토글이 아니라 세그먼트다. 토글은 “끔”이 무엇인지 라벨 하나로 유추해야 한다.
+      면적 단위처럼 <strong>평 / ㎡</strong> 둘 다 정당한 선택지일 때는 둘 다 보여준다.
+    </p>
+    <div class="seg" role="group" aria-label="면적 단위" data-od-id="switch-segment">
+      <button class="seg-btn" aria-pressed="true">평</button>
+      <button class="seg-btn" aria-pressed="false">㎡</button>
+    </div>
+
+    <h3 class="blk">규격</h3>
+    <table class="specs-t">
+      <tbody>
+        <tr><td>트랙</td><td>52 × 30px · <code>border-radius: 999px</code> · 1px 테두리</td></tr>
+        <tr><td>노브</td><td>24px 정원 · 이동거리 22px</td></tr>
+        <tr><td>꺼짐</td><td>트랙 <code>--surface</code> · 테두리 <code>--border-str</code> · 노브 <code>--muted</code></td></tr>
+        <tr><td>켜짐</td><td>트랙 <code>--accent</code> · 노브 <code>--surface</code></td></tr>
+        <tr><td>hover</td><td>꺼짐은 테두리만 <code>--fg</code>로. 켜짐은 <code>--accent-ink</code>로 어두워진다</td></tr>
+        <tr><td>focus</td><td><code>outline: 2px solid var(--fg)</code> · offset 2px</td></tr>
+        <tr><td>사용 불가</td><td>트랙 <code>--sunken</code> · 노브 <code>--border</code> · 라벨 <code>--hint</code></td></tr>
+        <tr><td>행 높이</td><td>최소 44px</td></tr>
+        <tr><td>애니메이션</td><td>노브 <code>transform 140ms ease</code>, 트랙 <code>background 140ms ease</code></td></tr>
+        <tr><td>마크업</td><td><code>&lt;input type="checkbox" role="switch"&gt;</code> — JS 없이 동작하고 스크린리더가 읽는다</td></tr>
+      </tbody>
+    </table>
   </section>
 
   <!-- ── 문구 ─────────────────────────── -->

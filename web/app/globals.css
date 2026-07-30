@@ -163,6 +163,52 @@ body {
   color: var(--ink-mid);
 }
 
+/*
+  2분할 세그먼트.
+
+  값이 둘 다 이름을 가질 때는 토글 대신 이것을 쓴다 (평 / ㎡, 막대 / 선).
+  토글은 "끔"이 무엇인지 라벨 하나로 유추해야 하므로 켬·끔이 명확한 경우에만 쓴다.
+  버튼 계열이라 각진 채로 둔다 — 라운드는 토글에만 허용된 예외다.
+*/
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+}
+
+.seg-btn {
+  min-height: 44px;
+  padding: 0 20px;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ink-mid);
+  background: var(--surface);
+  border: 0;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.seg-btn + .seg-btn {
+  border-left: 1px solid var(--line-strong);
+}
+
+.seg-btn:hover {
+  background: var(--sunken);
+  color: var(--ink);
+}
+
+/* 선택은 색이 아니라 먹/바탕을 뒤집어 표시한다 */
+.seg-btn[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seg-btn {
+    transition-duration: 0ms;
+  }
+}
+
 /* 가격 정보 없는 필지 — 색을 하나 더 늘리지 않고 사선으로 구분한다 */
 .hatch-none {
   background: repeating-linear-gradient(

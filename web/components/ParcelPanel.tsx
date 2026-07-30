@@ -388,9 +388,9 @@ function LineOverlay({
 /**
  * 막대 ↔ 선 전환.
  *
- * 글자 대신 1.7px 단선 아이콘으로 표시한다 — 카테고리에 색을 배정하지 않는다는
- * 원칙에 맞추고, 차트 제목 옆에서 시선을 덜 가져간다.
- * 아이콘만 두더라도 aria-label로 무엇인지 읽히게 한다.
+ * 토글이 아니라 2분할 세그먼트다 — 양쪽이 모두 이름을 가진 값이기 때문이다.
+ * 토글은 "끔"이 무엇인지 라벨 하나로 유추해야 하므로 켬·끔이 명확할 때만 쓴다.
+ * 규격은 DESIGN.md의 .seg / .seg-btn을 그대로 따른다.
  */
 function ChartToggle({
   mode,
@@ -399,63 +399,24 @@ function ChartToggle({
   mode: ChartMode;
   onChange: (m: ChartMode) => void;
 }) {
-  const items: { id: ChartMode; label: string; path: React.ReactNode }[] = [
-    {
-      id: "bar",
-      label: "막대 그래프",
-      path: (
-        <>
-          <path d="M4 13V9M8.5 13V5M13 13V7" />
-          <path d="M2.5 15.5h13" opacity="0.45" />
-        </>
-      ),
-    },
-    {
-      id: "line",
-      label: "선 그래프",
-      path: (
-        <>
-          <path d="M3 12.5l3.5-4 3 2.5 4.5-6" />
-          <path d="M2.5 15.5h13" opacity="0.45" />
-        </>
-      ),
-    },
+  const items: { id: ChartMode; label: string }[] = [
+    { id: "bar", label: "막대" },
+    { id: "line", label: "선" },
   ];
 
   return (
-    <div className="ml-auto flex border border-[var(--line)]">
-      {items.map((it) => {
-        const on = mode === it.id;
-        return (
-          <button
-            key={it.id}
-            type="button"
-            aria-pressed={on}
-            aria-label={it.label}
-            title={it.label}
-            onClick={() => onChange(it.id)}
-            className={`grid h-11 w-11 place-items-center ${
-              on
-                ? "bg-[var(--sunken)] text-[var(--ink)]"
-                : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
-            }`}
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 18 18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              {it.path}
-            </svg>
-          </button>
-        );
-      })}
+    <div className="seg ml-auto" role="group" aria-label="차트 종류">
+      {items.map((it) => (
+        <button
+          key={it.id}
+          type="button"
+          className="seg-btn"
+          aria-pressed={mode === it.id}
+          onClick={() => onChange(it.id)}
+        >
+          {it.label}
+        </button>
+      ))}
     </div>
   );
 }
