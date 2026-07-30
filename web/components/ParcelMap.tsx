@@ -125,11 +125,22 @@ function withoutOverlap<T extends { lng: number; lat: number; deal_count: number
   items: T[],
   box: { w: number; h: number },
 ): T[] {
+  /*
+    화면 밖은 먼저 버린다.
+    경기도 읍면동은 747개인데 Marker는 화면 밖이어도 DOM 요소를 만든다.
+    남겨봐야 보이지 않고, 겹침 판정만 화면 밖 좌표로 흐려진다.
+    가장자리에서 칩이 갑자기 나타나지 않도록 한 화면 크기만큼 여유를 준다.
+  */
+  const { width, height } = m.getCanvas();
+  const near = (p: { x: number; y: number }) =>
+    p.x > -width && p.x < width * 2 && p.y > -height && p.y < height * 2;
+
   const placed: { x: number; y: number }[] = [];
   const out: T[] = [];
 
   for (const it of [...items].sort((a, b) => b.deal_count - a.deal_count)) {
     const p = m.project([it.lng, it.lat]);
+    if (!near(p)) continue;
     const hit = placed.some(
       (q) => Math.abs(q.x - p.x) < box.w && Math.abs(q.y - p.y) < box.h,
     );
@@ -403,13 +414,16 @@ export default function ParcelMap({
    */
   async function syncChips(m: MapLibreMap, level: ChipLevel) {
     /*
-      같은 레벨 안에서도 줌이 바뀌면 화면상 칩 간격이 달라져 겹침 판정을 다시 해야 한다.
-      매 프레임 다시 고르면 칩이 깜빡이므로 0.5단계로 뭉뚱그린다.
+      줌이 바뀌면 화면상 칩 간격이, 이동하면 화면에 드는 칩이 달라져
+      둘 다 다시 골라야 한다. 매번 새로 만들면 칩이 깜빡이므로
+      줌은 0.5단계, 위치는 0.02도(약 2km)로 뭉뚱그린다.
     */
+    const c = m.getCenter();
     const key =
       level === "parcel"
         ? "parcel"
-        : `${level}@${Math.round(m.getZoom() * 2) / 2}`;
+        : `${level}@${Math.round(m.getZoom() * 2) / 2}` +
+          `@${Math.round(c.lng * 50)},${Math.round(c.lat * 50)}`;
     if (key === chipKey.current) return;
 
     if (level === "parcel") {
