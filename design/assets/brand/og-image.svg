@@ -1,0 +1,36 @@
+<!-- DDoToRo OG 이미지 1200×630 (원본)
+     주의: 대부분의 SNS 크롤러는 SVG를 OG 이미지로 받지 않는다.
+     Next.js App Router의 app/opengraph-image.tsx로 PNG를 생성하고,
+     이 파일은 그 화면의 레이아웃 원본으로 쓴다.
+     서체: Hahmlet(표제) / IBM Plex Sans KR(본문) — 렌더 환경에 폰트가 있어야 한다. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630"
+     role="img" aria-label="DDoToRo — 경기 땅값 조회">
+  <rect width="1200" height="630" fill="#F9F8F5"/>
+
+  <!-- 가격 램프 5단 띠 — 이 서비스가 파는 것이 가격임을 한 줄로 말한다 -->
+  <g>
+    <rect x="0" y="606" width="240" height="24" fill="#FAEEE5"/>
+    <rect x="240" y="606" width="240" height="24" fill="#F2D2BE"/>
+    <rect x="480" y="606" width="240" height="24" fill="#E0AC91"/>
+    <rect x="720" y="606" width="240" height="24" fill="#CA6E5D"/>
+    <rect x="960" y="606" width="240" height="24" fill="#9A5048"/>
+  </g>
+
+  <!-- 마크 — 원본 32 기준 ×4.5 = 144 -->
+  <g transform="translate(76.3 132) scale(4.5)"
+     fill="none" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M12.4 7.8 H4.4 V24.2 H12.4" stroke="#1B150D"/>
+    <path d="M27.6 7.8 H19.6 V24.2 H27.6" stroke="#9A5048"/>
+  </g>
+
+  <text x="88" y="360" font-family="Hahmlet, 'Noto Serif KR', serif" font-size="86"
+        font-weight="600" letter-spacing="-2" fill="#1B150D">DDoToRo</text>
+  <text x="88" y="432" font-family="'IBM Plex Sans KR', sans-serif" font-size="34"
+        fill="#5F5A52">경기 땅값 조회</text>
+  <text x="88" y="500" font-family="'IBM Plex Sans KR', sans-serif" font-size="26"
+        fill="#77716A">내 땅이 얼마짜리인지, 지도에서 바로 확인합니다</text>
+
+  <line x1="88" y1="536" x2="1112" y2="536" stroke="#E4E1DA" stroke-width="1"/>
+  <text x="88" y="576" font-family="'IBM Plex Mono', monospace" font-size="22"
+        letter-spacing="2" fill="#77716A">필지 5,210,960건 · 2026년 공시지가</text>
+</svg>

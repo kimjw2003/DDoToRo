@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import BrandMark from "@/components/BrandMark";
 import ParcelMap, { type ChipLevel } from "@/components/ParcelMap";
 import ParcelPanel, { type ParcelDetail } from "@/components/ParcelPanel";
 import Legend from "@/components/Legend";
@@ -115,10 +116,18 @@ export default function MapView() {
       */}
       <aside className="hidden w-[384px] shrink-0 flex-col overflow-hidden border-r border-[var(--line)] bg-[var(--surface)] lg:flex 2xl:w-[416px]">
         <header className="border-b border-[var(--line)] px-4 py-4">
-          <h1 className="font-serif-num text-[22px] text-[var(--ink)]">DDoToRo</h1>
-          <p className="text-[14px] text-[var(--ink-soft)]">
-            {SERVICE_AREA.short} 땅값 조회
-          </p>
+          {/* 워드마크 잠금 — 마크 + 이름. 간격 12px(gap-3)는 DESIGN.md 규정값 */}
+          <div className="flex items-center gap-3">
+            <BrandMark size={30} />
+            <div className="min-w-0">
+              <h1 className="font-serif-num text-[22px] leading-tight text-[var(--ink)]">
+                DDoToRo
+              </h1>
+              <p className="text-[14px] leading-tight text-[var(--ink-soft)]">
+                {SERVICE_AREA.short} 땅값 조회
+              </p>
+            </div>
+          </div>
           <div className="mt-3">
             <SearchBox onPick={handlePick} />
           </div>

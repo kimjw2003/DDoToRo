@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDoToRo — 서비스 아이콘 시안 4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/tokens.css">
+<style>
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 var(--sp-6) var(--sp-10); }
+
+  header.mast { padding: var(--sp-10) 0 var(--sp-5); border-bottom: 1px solid var(--fg); }
+  header.mast h1 { font-family: var(--font-display); font-size: 40px; font-weight: 500;
+                   line-height: 1.1; letter-spacing: -0.025em; margin: var(--sp-3) 0 var(--sp-4); }
+  header.mast p { max-width: 62ch; font-size: 17px; color: var(--muted); margin: 0; }
+
+  .concept { display: grid; gap: var(--sp-6); padding: var(--sp-8) 0;
+             border-bottom: 1px solid var(--border); }
+  @media (min-width: 900px) { .concept { grid-template-columns: 300px 1fr; } }
+
+  .idx { display: flex; align-items: baseline; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+  .idx b { font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.09em; color: var(--muted); }
+  .concept h2 { font-family: var(--font-display); font-size: 26px; font-weight: 500;
+                letter-spacing: -0.018em; margin: 0 0 var(--sp-3); }
+  .concept .why { font-size: 16px; margin: 0 0 var(--sp-4); max-width: 46ch; }
+  .pro, .con { display: grid; grid-template-columns: 42px 1fr; gap: var(--sp-2) var(--sp-3);
+               font-size: 14px; line-height: 1.6; }
+  .pro span:first-child, .con span:first-child { color: var(--muted); letter-spacing: 0.012em; }
+  .con { margin-top: 6px; }
+
+  .specs { display: flex; align-items: flex-end; gap: var(--sp-8); flex-wrap: wrap; }
+  .size { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); }
+  .size .cap { font-family: var(--font-mono); font-size: 14px; color: var(--muted); }
+  .mark { display: block; }
+
+  .tile { display: grid; place-items: center; width: 72px; height: 72px;
+          background: var(--surface); border: 1px solid var(--border); }
+  .tile-dark { background: var(--fg); border-color: var(--fg); }
+
+  .lockup { display: flex; align-items: center; gap: 10px; }
+  .lockup .wordmark { font-family: var(--font-display); font-size: 24px; font-weight: 600;
+                      letter-spacing: -0.015em; }
+  .lockup .sub { font-size: 14px; color: var(--muted); }
+
+  /* ── 마크별 색 배정 ───────────────────────── */
+  .mk-a { color: var(--p5); }
+  .mk-b { color: var(--fg); --mk-accent: var(--accent); }
+  .mk-c { --c1: var(--p2); --c2: var(--p4); --c3: var(--p5); }
+  .mk-d { color: var(--fg); }
+
+  .tile-dark .mk-a { color: var(--bg); }
+  .tile-dark .mk-b { color: var(--bg); --mk-accent: var(--bg); }
+  .tile-dark .mk-c { --c1: oklch(100% 0 0 / 0.30); --c2: oklch(100% 0 0 / 0.62); --c3: oklch(100% 0 0 / 1); }
+  .tile-dark .mk-d { color: var(--bg); }
+
+  /* ── 16px 판독 시험 ───────────────────────── */
+  .test { padding: var(--sp-8) 0; }
+  .test-row { display: flex; align-items: center; gap: var(--sp-8); flex-wrap: wrap;
+              padding: var(--sp-5) var(--sp-6); background: var(--surface);
+              border: 1px solid var(--border); }
+  .tab-sim { display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+             background: var(--bg); border: 1px solid var(--border); }
+  .tab-sim span { font-size: 14px; color: var(--muted); white-space: nowrap; }
+
+  .verdict { padding: var(--sp-8) 0 0; }
+  .verdict table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  .verdict th, .verdict td { text-align: left; padding: var(--sp-3) var(--sp-4);
+                             border-bottom: 1px solid var(--border); vertical-align: baseline; }
+  .verdict th { font-size: 14px; font-weight: 600; color: var(--muted);
+                letter-spacing: 0.012em; border-bottom-color: var(--border-str); }
+  .verdict td.q { width: 24%; font-weight: 500; }
+  .nav-back { display: inline-block; margin-top: var(--sp-8); }
+</style>
+</head>
+<body>
+
+<!-- 마크 정의: 32×32 viewBox, 안쪽 여백 3px -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mk-a" viewBox="0 0 32 32">
+    <path d="M10 4 L24 6 L29 17 L21 28 L8 26 L3 13 Z" fill="currentColor"/>
+  </symbol>
+
+  <symbol id="mk-b" viewBox="0 0 32 32">
+    <path d="M10 4 L24 6 L29 17 L21 28 L8 26 L3 13 Z"
+          fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="miter"/>
+    <path d="M16 12 V20 M12 16 H20"
+          stroke="var(--mk-accent, currentColor)" stroke-width="2.6"/>
+  </symbol>
+
+  <symbol id="mk-c" viewBox="0 0 32 32">
+    <path d="M10 4 L24 6 L29 17 L21 28 L8 26 L3 13 Z" fill="var(--c1)"/>
+    <path d="M11.9 7.8 L21.4 9.2 L24.8 16.7 L19.4 24.2 L10.6 22.8 L7.2 14 Z" fill="var(--c2)"/>
+    <path d="M13.8 11.7 L18.9 12.4 L20.7 16.4 L17.8 20.3 L13.1 19.6 L11.3 14.9 Z" fill="var(--c3)"/>
+  </symbol>
+
+  <symbol id="mk-d" viewBox="0 0 32 32">
+    <path d="M14 7 H4.5 V25 H14" fill="none" stroke="currentColor"
+          stroke-width="3.4" stroke-linejoin="miter"/>
+    <path d="M27.5 7 H18 V25 H27.5" fill="none" stroke="currentColor"
+          stroke-width="3.4" stroke-linejoin="miter"/>
+  </symbol>
+</svg>
+
+<div class="wrap">
+
+  <header class="mast" data-od-id="icon-masthead">
+    <div class="t-eyebrow">DDoToRo · Brand mark — 4 concepts</div>
+    <h1>서비스 대표 아이콘 시안</h1>
+    <p>
+      네 개 모두 <strong>단색 한 도형</strong>이 원칙이다. 파비콘 16px에서 판별되지 않으면 아이콘이 아니라
+      장식이므로, 아래 각 시안을 64 · 32 · 16px과 반전 타일에서 함께 보여준다.
+      색은 디자인 시스템의 가격 램프에서만 가져왔다 — 새 색을 만들지 않았다.
+    </p>
+  </header>
+
+  <!-- ── A ─────────────────────────────────── -->
+  <section class="concept" data-od-id="concept-parcel">
+    <div>
+      <div class="idx"><b>A</b></div>
+      <h2>필지</h2>
+      <p class="why">
+        상세 화면의 시그니처인 <strong>필지 실루엣을 그대로 마크로</strong> 쓴다.
+        땅은 하나하나 모양이 다르고 소유자는 자기 땅을 모양으로 알아본다 — 이 서비스가 아파트 앱과
+        갈리는 지점이 그것 하나다.
+      </p>
+      <div class="pro"><span>강점</span><span>제품 안의 실루엣과 100% 같은 언어. 16px에서 가장 또렷하다</span></div>
+      <div class="con"><span>약점</span><span>맥락 없이 보면 그냥 도형이다. 이름과 함께 쓰일 때 힘이 산다</span></div>
+    </div>
+    <div class="specs">
+      <div class="size"><svg class="mark mk-a" width="64" height="64"><use href="#mk-a"/></svg><span class="cap">64</span></div>
+      <div class="size"><svg class="mark mk-a" width="32" height="32"><use href="#mk-a"/></svg><span class="cap">32</span></div>
+      <div class="size"><svg class="mark mk-a" width="16" height="16"><use href="#mk-a"/></svg><span class="cap">16</span></div>
+      <div class="size"><div class="tile"><svg class="mark mk-a" width="40" height="40"><use href="#mk-a"/></svg></div><span class="cap">타일</span></div>
+      <div class="size"><div class="tile tile-dark"><svg class="mark mk-a" width="40" height="40"><use href="#mk-a"/></svg></div><span class="cap">반전</span></div>
+      <div class="size">
+        <div class="lockup"><svg class="mark mk-a" width="28" height="28"><use href="#mk-a"/></svg>
+          <span class="wordmark">DDoToRo</span></div>
+        <span class="cap">잠금</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── B ─────────────────────────────────── -->
+  <section class="concept" data-od-id="concept-datum">
+    <div>
+      <div class="idx"><b>B</b></div>
+      <h2>기준점</h2>
+      <p class="why">
+        필지 외곽선 안에 <strong>지적 도근점의 십자 표식</strong>을 놓는다.
+        이 서비스가 파는 것은 어림값이 아니라 <strong>측량되고 공시된 값</strong>이라는 선언이다.
+        십자는 강조색 — 화면에서 채도를 쓰는 두 곳 중 하나와 같은 색이다.
+      </p>
+      <div class="pro"><span>강점</span><span>의미가 형태에 직접 들어 있다. 공적 장부라는 성격이 가장 잘 드러난다</span></div>
+      <div class="con"><span>약점</span><span>선이 둘이라 16px에서 안쪽이 메워진다. 지도 핀으로 오독될 여지도 있다</span></div>
+    </div>
+    <div class="specs">
+      <div class="size"><svg class="mark mk-b" width="64" height="64"><use href="#mk-b"/></svg><span class="cap">64</span></div>
+      <div class="size"><svg class="mark mk-b" width="32" height="32"><use href="#mk-b"/></svg><span class="cap">32</span></div>
+      <div class="size"><svg class="mark mk-b" width="16" height="16"><use href="#mk-b"/></svg><span class="cap">16</span></div>
+      <div class="size"><div class="tile"><svg class="mark mk-b" width="40" height="40"><use href="#mk-b"/></svg></div><span class="cap">타일</span></div>
+      <div class="size"><div class="tile tile-dark"><svg class="mark mk-b" width="40" height="40"><use href="#mk-b"/></svg></div><span class="cap">반전</span></div>
+      <div class="size">
+        <div class="lockup"><svg class="mark mk-b" width="28" height="28"><use href="#mk-b"/></svg>
+          <span class="wordmark">DDoToRo</span></div>
+        <span class="cap">잠금</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── C ─────────────────────────────────── -->
+  <section class="concept" data-od-id="concept-ramp">
+    <div>
+      <div class="idx"><b>C</b></div>
+      <h2>단계</h2>
+      <p class="why">
+        같은 필지가 <strong>세 겹으로 중첩</strong>되고 안쪽으로 갈수록 진해진다.
+        가격 5단계 램프를 그대로 마크로 압축한 것이다. 이 서비스는 땅이 아니라
+        <strong>땅의 값</strong>을 다룬다는 진술.
+      </p>
+      <div class="pro"><span>강점</span><span>서비스가 지도가 아니라 가격 데이터임을 한 형태로 말한다. 램프 색을 그대로 씀</span></div>
+      <div class="con"><span>약점</span><span>16px에서 세 겹이 뭉갠다. 파비콘용으로는 두 겹 축약본이 따로 필요하다</span></div>
+    </div>
+    <div class="specs">
+      <div class="size"><svg class="mark mk-c" width="64" height="64"><use href="#mk-c"/></svg><span class="cap">64</span></div>
+      <div class="size"><svg class="mark mk-c" width="32" height="32"><use href="#mk-c"/></svg><span class="cap">32</span></div>
+      <div class="size"><svg class="mark mk-c" width="16" height="16"><use href="#mk-c"/></svg><span class="cap">16</span></div>
+      <div class="size"><div class="tile"><svg class="mark mk-c" width="40" height="40"><use href="#mk-c"/></svg></div><span class="cap">타일</span></div>
+      <div class="size"><div class="tile tile-dark"><svg class="mark mk-c" width="40" height="40"><use href="#mk-c"/></svg></div><span class="cap">반전</span></div>
+      <div class="size">
+        <div class="lockup"><svg class="mark mk-c" width="28" height="28"><use href="#mk-c"/></svg>
+          <span class="wordmark">DDoToRo</span></div>
+        <span class="cap">잠금</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── D ─────────────────────────────────── -->
+  <section class="concept" data-od-id="concept-hangul">
+    <div>
+      <div class="idx"><b>D</b></div>
+      <h2>ㄸ</h2>
+      <p class="why">
+        서비스 이름의 첫 자음. 두 획을 <strong>모서리 각을 살린 지적선</strong>으로 그어
+        나란한 두 필지처럼 읽히게 했다. 사이의 흰 틈은 필지를 가르는 길이다.
+      </p>
+      <div class="pro"><span>강점</span><span>이름과 직결돼 인지가 가장 빠르다. 획이 굵어 16px에서도 안 무너진다</span></div>
+      <div class="con"><span>약점</span><span>땅·가격이라는 의미가 형태에 없다.
+        렌더로 확인해 보니 라틴 문맥에서 <strong>CC로 읽힐 소지</strong>가 있다 — 도메인·앱스토어처럼
+        영문과 나란히 놓이는 자리에서 불리하다</span></div>
+    </div>
+    <div class="specs">
+      <div class="size"><svg class="mark mk-d" width="64" height="64"><use href="#mk-d"/></svg><span class="cap">64</span></div>
+      <div class="size"><svg class="mark mk-d" width="32" height="32"><use href="#mk-d"/></svg><span class="cap">32</span></div>
+      <div class="size"><svg class="mark mk-d" width="16" height="16"><use href="#mk-d"/></svg><span class="cap">16</span></div>
+      <div class="size"><div class="tile"><svg class="mark mk-d" width="40" height="40"><use href="#mk-d"/></svg></div><span class="cap">타일</span></div>
+      <div class="size"><div class="tile tile-dark"><svg class="mark mk-d" width="40" height="40"><use href="#mk-d"/></svg></div><span class="cap">반전</span></div>
+      <div class="size">
+        <div class="lockup"><svg class="mark mk-d" width="28" height="28"><use href="#mk-d"/></svg>
+          <span class="wordmark">DDoToRo</span></div>
+        <span class="cap">잠금</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 16px 판독 ─────────────────────────── -->
+  <section class="test" data-od-id="favicon-test">
+    <h2 style="font-family:var(--font-display);font-size:25px;font-weight:500;letter-spacing:-0.018em;margin:0 0 var(--sp-2)">
+      16px 판독</h2>
+    <p style="max-width:62ch;color:var(--muted);margin:0 0 var(--sp-5)">
+      브라우저 탭에서 실제로 보이는 크기다. 여기서 구분되지 않으면 나머지는 의미가 없다.</p>
+    <div class="test-row">
+      <div class="tab-sim"><svg class="mark mk-a" width="16" height="16"><use href="#mk-a"/></svg><span>A 필지</span></div>
+      <div class="tab-sim"><svg class="mark mk-b" width="16" height="16"><use href="#mk-b"/></svg><span>B 기준점</span></div>
+      <div class="tab-sim"><svg class="mark mk-c" width="16" height="16"><use href="#mk-c"/></svg><span>C 단계</span></div>
+      <div class="tab-sim"><svg class="mark mk-d" width="16" height="16"><use href="#mk-d"/></svg><span>D ㄸ</span></div>
+    </div>
+  </section>
+
+  <!-- ── 판단 ──────────────────────────────── -->
+  <section class="verdict" data-od-id="icon-verdict">
+    <h2 style="font-family:var(--font-display);font-size:25px;font-weight:500;letter-spacing:-0.018em;margin:0 0 var(--sp-5)">
+      고르실 때</h2>
+    <table>
+      <thead><tr><th>기준</th><th>A 필지</th><th>B 기준점</th><th>C 단계</th><th>D ㄸ</th></tr></thead>
+      <tbody>
+        <tr><td class="q">16px 판독</td><td>가장 좋음</td><td>약함</td><td>약함</td><td>좋음</td></tr>
+        <tr><td class="q">의미 전달</td><td>땅</td><td>공적 측량값</td><td>가격 데이터</td><td>이름</td></tr>
+        <tr><td class="q">제품과의 일관성</td><td>실루엣과 동일</td><td>높음</td><td>램프와 동일</td><td>없음</td></tr>
+        <tr><td class="q">단독 사용</td><td>이름 필요</td><td>가능</td><td>가능</td><td>가능</td></tr>
+        <tr><td class="q">확장 여지</td><td>필지 모양을 지역별로 바꿀 수 있음</td><td>고정</td><td>겹 수로 단계 표현 가능</td><td>고정</td></tr>
+      </tbody>
+    </table>
+    <p style="max-width:64ch;margin-top:var(--sp-5);color:var(--muted)">
+      추천은 <strong style="color:var(--fg)">A</strong>다. 제품 안에서 이미 쓰는 형태라 학습 비용이 0이고,
+      16px에서 무너지지 않으며, 브랜드가 "땅 모양으로 기억된다"는 명제를 아이콘이 먼저 말해 준다.
+      의미를 더 앞세우고 싶으시면 <strong style="color:var(--fg)">B</strong>, 데이터 서비스로 보이고 싶으시면
+      <strong style="color:var(--fg)">C</strong>다. 고르시면 파비콘·앱 아이콘·OG 이미지 규격으로 정리해 드리겠습니다.
+    </p>
+    <a class="link nav-back" href="index.html">← 화면 목록으로</a>
+  </section>
+
+</div>
+</body>
+</html>

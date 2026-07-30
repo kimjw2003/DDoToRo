@@ -1,0 +1,12 @@
+<!-- DDoToRo 앱 아이콘 512×512 — 벽돌 바탕 + 종이색 ㄸ
+     iOS·Android가 모서리를 자체 마스크로 깎으므로 여기서 라운드를 주지 않는다.
+     마스크에 잘리지 않도록 파비콘보다 여백을 넓혔다(마크 폭 20/32). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="512" height="512"
+     role="img" aria-label="DDoToRo">
+  <rect width="32" height="32" fill="#9A5048"/>
+  <g transform="translate(4.06 4.06) scale(0.7463)"
+     fill="none" stroke="#F9F8F5" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M12.4 7.8 H4.4 V24.2 H12.4"/>
+    <path d="M27.6 7.8 H19.6 V24.2 H27.6"/>
+  </g>
+</svg>

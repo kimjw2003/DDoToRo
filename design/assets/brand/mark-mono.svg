@@ -1,0 +1,9 @@
+<!-- DDoToRo 마크 — 단색 먹
+     인쇄 흑백 · 팩스 · 채도를 쓸 수 없는 문서용 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32"
+     role="img" aria-label="DDoToRo">
+  <g fill="none" stroke="#1B150D" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M12.4 7.8 H4.4 V24.2 H12.4"/>
+    <path d="M27.6 7.8 H19.6 V24.2 H27.6"/>
+  </g>
+</svg>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDoToRo — 브랜드 에셋</title>
+<link rel="icon" href="assets/brand/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/tokens.css">
+<style>
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 var(--sp-6) var(--sp-10); }
+  header.mast { padding: var(--sp-10) 0 var(--sp-5); border-bottom: 1px solid var(--fg); }
+  header.mast h1 { font-family: var(--font-display); font-size: 40px; font-weight: 500;
+                   line-height: 1.1; letter-spacing: -0.025em; margin: var(--sp-3) 0 var(--sp-4); }
+  header.mast p { max-width: 64ch; font-size: 17px; color: var(--muted); margin: 0; }
+
+  section { padding: var(--sp-8) 0; border-bottom: 1px solid var(--border); }
+  section > h2 { font-family: var(--font-display); font-size: 25px; font-weight: 500;
+                 letter-spacing: -0.018em; margin: 0 0 var(--sp-2); }
+  section > .sub { max-width: 64ch; color: var(--muted); margin: 0 0 var(--sp-6); }
+
+  .files { display: grid; gap: 1px; background: var(--border); border: 1px solid var(--border); }
+  @media (min-width: 720px) { .files { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1000px) { .files { grid-template-columns: repeat(4, 1fr); } }
+  .file { background: var(--surface); padding: var(--sp-5); }
+  .file .stage { display: grid; place-items: center; height: 108px; margin-bottom: var(--sp-4); }
+  .file .stage.dark { background: var(--fg); }
+  .file .stage.brick { background: var(--accent); }
+  .file .stage.paper { background: var(--bg); border: 1px solid var(--border); }
+  .file code { display: block; font-family: var(--font-mono); font-size: 14px;
+               letter-spacing: 0.01em; margin-bottom: 4px; }
+  .file span { font-size: 14px; color: var(--muted); line-height: 1.5; }
+
+  .sizes { display: flex; align-items: flex-end; gap: var(--sp-6); flex-wrap: wrap;
+           padding: var(--sp-5) var(--sp-6); background: var(--surface); border: 1px solid var(--border); }
+  .sz { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); }
+  .sz .cap { font-family: var(--font-mono); font-size: 14px; color: var(--muted); }
+  .tabbar { display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+            background: var(--bg); border: 1px solid var(--border); }
+  .tabbar span { font-size: 14px; color: var(--muted); }
+
+  .lockup { display: flex; align-items: center; gap: 12px; }
+  .lockup .wm { font-family: var(--font-display); font-size: 27px; font-weight: 600; letter-spacing: -0.015em; }
+  .lockup .sub2 { font-size: 15px; color: var(--muted); padding-left: 12px;
+                  border-left: 1px solid var(--border-str); }
+  .og { width: 100%; max-width: 900px; border: 1px solid var(--border); display: block; }
+  table.t { width: 100%; border-collapse: collapse; font-size: 16px; max-width: 700px; }
+  table.t td { padding: var(--sp-2) var(--sp-4) var(--sp-2) 0; border-bottom: 1px solid var(--border); }
+  table.t td:first-child { width: 210px; }
+  table.t code { font-family: var(--font-mono); font-size: 14px; }
+  .nav-back { display: inline-block; margin-top: var(--sp-8); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast" data-od-id="assets-masthead">
+    <div class="t-eyebrow">DDoToRo · Brand assets — final</div>
+    <h1>확정 마크와 에셋</h1>
+    <p>
+      ㄸ · <strong>먹 + 벽돌</strong> · 라운드로 확정했다. 아래는 실제 파일을 그대로 불러온 것이라
+      여기서 제대로 보이면 배포해도 된다. 규칙은 <code style="font-family:var(--font-mono);font-size:15px">assets/brand/README.md</code>에 있다.
+    </p>
+  </header>
+
+  <section data-od-id="asset-files">
+    <h2>파일</h2>
+    <p class="sub">모두 <code style="font-family:var(--font-mono);font-size:15px">assets/brand/</code> 안에 있다. 색은 hex로 굳혔다 — 파비콘·OG는 외부에서 렌더되므로 토큰을 참조할 수 없다.</p>
+    <div class="files">
+      <div class="file">
+        <div class="stage paper"><img src="assets/brand/mark.svg" width="72" height="72" alt="주 마크"></div>
+        <code>mark.svg</code><span>주 마크. 밝은 바탕 어디든</span>
+      </div>
+      <div class="file">
+        <div class="stage paper"><img src="assets/brand/mark-solid.svg" width="72" height="72" alt="단색 벽돌 마크"></div>
+        <code>mark-solid.svg</code><span>한 색만 되는 자리 — 1도 인쇄·자수·각인</span>
+      </div>
+      <div class="file">
+        <div class="stage paper"><img src="assets/brand/mark-mono.svg" width="72" height="72" alt="단색 먹 마크"></div>
+        <code>mark-mono.svg</code><span>흑백 문서·팩스</span>
+      </div>
+      <div class="file">
+        <div class="stage dark"><img src="assets/brand/mark-reverse.svg" width="72" height="72" alt="반전 마크"></div>
+        <code>mark-reverse.svg</code><span>먹·벽돌 바탕 위</span>
+      </div>
+      <div class="file">
+        <div class="stage"><img src="assets/brand/favicon.svg" width="72" height="72" alt="파비콘"></div>
+        <code>favicon.svg</code><span>브라우저 탭. 16px에서 획만으로는 힘이 빠져 바탕을 채웠다</span>
+      </div>
+      <div class="file">
+        <div class="stage"><img src="assets/brand/app-icon.svg" width="72" height="72" alt="앱 아이콘"></div>
+        <code>app-icon.svg</code><span>512×512. OS 마스크에 잘리지 않게 여백을 더 뒀다</span>
+      </div>
+      <div class="file">
+        <div class="stage brick"><img src="assets/brand/mark-reverse.svg" width="72" height="72" alt="벽돌 바탕 위 반전 마크"></div>
+        <code>mark-reverse.svg</code><span>벽돌 바탕 위에서도 같은 파일을 쓴다</span>
+      </div>
+      <div class="file">
+        <div class="stage paper" style="padding:10px"><img src="assets/brand/og-image.svg" style="width:100%" alt="OG 이미지"></div>
+        <code>og-image.svg</code><span>OG <strong>원본</strong>. 그대로 배포하지 않는다</span>
+      </div>
+    </div>
+  </section>
+
+  <section data-od-id="asset-sizes">
+    <h2>크기</h2>
+    <p class="sub">16px이 하한이다. 그 이하가 필요하면 바탕 있는 파비콘을 쓴다.</p>
+    <div class="sizes">
+      <div class="sz"><img src="assets/brand/mark.svg" width="64" height="64" alt=""><span class="cap">64</span></div>
+      <div class="sz"><img src="assets/brand/mark.svg" width="32" height="32" alt=""><span class="cap">32</span></div>
+      <div class="sz"><img src="assets/brand/mark.svg" width="24" height="24" alt=""><span class="cap">24</span></div>
+      <div class="sz"><img src="assets/brand/mark.svg" width="16" height="16" alt=""><span class="cap">16</span></div>
+      <div class="sz">
+        <div class="tabbar"><img src="assets/brand/favicon.svg" width="16" height="16" alt="">
+          <span>DDoToRo — 양평군 땅값</span></div>
+        <span class="cap">탭 16</span>
+      </div>
+    </div>
+  </section>
+
+  <section data-od-id="asset-lockup">
+    <h2>워드마크 잠금</h2>
+    <p class="sub">
+      마크 + 이름은 <strong>이미지가 아니라 HTML로 조판한다.</strong>
+      SVG에 텍스트를 넣으면 폰트가 없는 환경에서 깨진다. 아래가 헤더에 그대로 들어갈 형태다.
+    </p>
+    <div class="sizes" style="gap:var(--sp-10)">
+      <div class="lockup">
+        <img src="assets/brand/mark.svg" width="32" height="32" alt="">
+        <span class="wm">DDoToRo</span>
+      </div>
+      <div class="lockup">
+        <img src="assets/brand/mark.svg" width="32" height="32" alt="">
+        <span class="wm">DDoToRo</span>
+        <span class="sub2">경기 양평군 땅값 조회</span>
+      </div>
+    </div>
+    <p class="t-label" style="margin-top:var(--sp-4)">
+      마크와 이름 사이 간격은 12px, 부제는 1px 세로선으로 나눈다. 이름은 Hahmlet 600.
+    </p>
+  </section>
+
+  <section data-od-id="asset-nextjs" style="border-bottom:0">
+    <h2>레포에 넣을 때</h2>
+    <p class="sub">Next.js App Router는 파일 이름만으로 자동 인식한다.</p>
+    <table class="t">
+      <tbody>
+        <tr><td><code>web/app/icon.svg</code></td><td><code>favicon.svg</code>를 복사</td></tr>
+        <tr><td><code>web/app/apple-icon.png</code></td><td><code>app-icon.svg</code>를 180×180 PNG로 변환</td></tr>
+        <tr><td><code>web/app/opengraph-image.tsx</code></td><td><code>og-image.svg</code>를 원본 삼아 PNG 생성.
+          Hahmlet·IBM Plex Sans KR을 함께 로드해야 서체가 산다</td></tr>
+        <tr><td><code>web/public/brand/</code></td><td>나머지 마크 파일</td></tr>
+      </tbody>
+    </table>
+    <a class="link nav-back" href="brand-mark-ddieut.html">← 마크 전개 근거</a>
+  </section>
+
+</div>
+</body>
+</html>

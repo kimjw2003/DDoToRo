@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDoToRo — ㄸ 마크 전개</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/tokens.css">
+<style>
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 var(--sp-6) var(--sp-10); }
+
+  header.mast { padding: var(--sp-10) 0 var(--sp-5); border-bottom: 1px solid var(--fg); }
+  header.mast h1 { font-family: var(--font-display); font-size: 40px; font-weight: 500;
+                   line-height: 1.1; letter-spacing: -0.025em; margin: var(--sp-3) 0 var(--sp-4); }
+  header.mast p { max-width: 64ch; font-size: 17px; color: var(--muted); margin: 0; }
+
+  section { padding: var(--sp-8) 0; border-bottom: 1px solid var(--border); }
+  section > h2 { font-family: var(--font-display); font-size: 25px; font-weight: 500;
+                 letter-spacing: -0.018em; margin: 0 0 var(--sp-2); }
+  section > .sub { max-width: 64ch; color: var(--muted); margin: 0 0 var(--sp-6); }
+
+  .variant { display: grid; gap: var(--sp-6); padding: var(--sp-7) 0; }
+  .variant + .variant { border-top: 1px solid var(--border); }
+  @media (min-width: 900px) { .variant { grid-template-columns: 300px 1fr; } }
+  .variant h3 { font-size: 18px; font-weight: 600; margin: 0 0 var(--sp-2); }
+  .variant .no { font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.09em;
+                 color: var(--muted); display: block; margin-bottom: var(--sp-2); }
+  .variant p { font-size: 16px; margin: 0 0 var(--sp-3); max-width: 44ch; }
+  .variant .note-s { font-size: 14px; color: var(--muted); line-height: 1.6; max-width: 44ch; }
+
+  .specs { display: flex; align-items: flex-end; gap: var(--sp-8); flex-wrap: wrap; }
+  .size { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); }
+  .size .cap { font-family: var(--font-mono); font-size: 14px; color: var(--muted); }
+  .tile { display: grid; place-items: center; width: 72px; height: 72px;
+          background: var(--surface); border: 1px solid var(--border); }
+  .tile-fill { background: var(--accent); border-color: var(--accent); }
+  .tile-ink { background: var(--fg); border-color: var(--fg); }
+  .lockup { display: flex; align-items: center; gap: 11px; }
+  .lockup .wordmark { font-family: var(--font-display); font-size: 25px; font-weight: 600;
+                      letter-spacing: -0.015em; }
+
+  /* ── 변형별 색 ─────────────────────────────
+     <use>가 만드는 섀도 트리에는 후손 셀렉터가 닿지 않는다.
+     상속되는 커스텀 프로퍼티로 두 획의 색을 따로 넘긴다. */
+  .v1 { --mk-l: var(--accent); --mk-r: var(--accent); }
+  .v2 { --mk-l: var(--p4);     --mk-r: var(--accent); }
+  .v3 { --mk-l: var(--fg);     --mk-r: var(--accent); }
+  .v4, .on-fill { --mk-l: var(--bg); --mk-r: var(--bg); }
+
+  /* ── 부드럽기 4단계 ─────────────────────────
+     캡을 square로 두면 각진 버전도 실루엣 크기가 같아 공정하게 비교된다 */
+  .soft-0 { --mk-join: miter; --mk-cap: square; }
+  .soft-1 { --mk-join: round; --mk-cap: square; }
+  .soft-2 { --mk-join: round; --mk-cap: round; }
+  .soft-3 { --mk-join: round; --mk-cap: round; --mk-w: 3.2; }
+
+  .softs { display: grid; gap: 1px; background: var(--border); border: 1px solid var(--border); }
+  @media (min-width: 720px) { .softs { grid-template-columns: repeat(4, 1fr); } }
+  .soft-cell { background: var(--surface); padding: var(--sp-5); text-align: center; }
+  .soft-cell .no { font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.09em;
+                   color: var(--muted); display: block; margin-bottom: var(--sp-4); }
+  .soft-cell .big { display: block; margin-bottom: var(--sp-3); }
+  .soft-cell .sm { display: flex; justify-content: center; align-items: center; gap: var(--sp-3);
+                   margin-bottom: var(--sp-4); }
+  .soft-cell h4 { font-size: 16px; font-weight: 600; margin: 0 0 6px; }
+  .soft-cell p { font-size: 14px; line-height: 1.6; color: var(--muted); margin: 0; }
+  .soft-cell.pick { background: var(--sunken); }
+  .soft-cell.pick h4::after { content: ' · 기본'; color: var(--accent); font-weight: 500; }
+
+  .test-row { display: flex; align-items: center; gap: var(--sp-6); flex-wrap: wrap;
+              padding: var(--sp-5) var(--sp-6); background: var(--surface); border: 1px solid var(--border); }
+  .tab-sim { display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+             background: var(--bg); border: 1px solid var(--border); }
+  .tab-sim span { font-size: 14px; color: var(--muted); white-space: nowrap; }
+
+  .rules-grid { display: grid; gap: 1px; background: var(--border); border: 1px solid var(--border); }
+  @media (min-width: 760px) { .rules-grid { grid-template-columns: 1fr 1fr; } }
+  .rule-cell { background: var(--surface); padding: var(--sp-5); }
+  .rule-cell .lab { font-family: var(--font-mono); font-size: 14px; color: var(--muted);
+                    letter-spacing: 0.02em; margin-bottom: var(--sp-3); }
+  .bad { position: relative; }
+  .bad::after { content: ''; position: absolute; inset: -4px;
+                background: linear-gradient(to top right, transparent 47%, var(--accent) 47% 53%, transparent 53%); }
+
+  table.spec { width: 100%; border-collapse: collapse; font-size: 16px; max-width: 640px; }
+  table.spec td { padding: var(--sp-2) var(--sp-4) var(--sp-2) 0; border-bottom: 1px solid var(--border); }
+  table.spec td:first-child { width: 176px; color: var(--muted); font-size: 14px; }
+  table.spec code { font-family: var(--font-mono); font-size: 14px; }
+  .nav-back { display: inline-block; margin-top: var(--sp-8); }
+</style>
+</head>
+<body>
+
+<!-- ㄸ 마크. 32×32 viewBox.
+     각 ㄷ은 11.6 × 20, 획 두께 3.6, 사이 틈 3.6(획 두께와 같다).
+     모서리·획 끝은 round(반지름 1.8)가 기본. 가로획을 12.4/27.6에서 끊는 이유는
+     둥근 캡이 1.8을 더 뻗어 원래 폭 14.2/29.4에 정확히 닿게 하기 위함이다. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mk-dd" viewBox="0 0 32 32">
+    <path d="M12.4 7.8 H4.4 V24.2 H12.4" fill="none"
+          style="stroke: var(--mk-l, currentColor); stroke-width: var(--mk-w, 3.6);
+                 stroke-linejoin: var(--mk-join, round); stroke-linecap: var(--mk-cap, round)"/>
+    <path d="M27.6 7.8 H19.6 V24.2 H27.6" fill="none"
+          style="stroke: var(--mk-r, currentColor); stroke-width: var(--mk-w, 3.6);
+                 stroke-linejoin: var(--mk-join, round); stroke-linecap: var(--mk-cap, round)"/>
+  </symbol>
+</svg>
+
+<div class="wrap">
+
+  <header class="mast" data-od-id="mark-masthead">
+    <div class="t-eyebrow">DDoToRo · Wordmark — ㄸ + accent</div>
+    <h1>ㄸ와 대표색</h1>
+    <p>
+      먼저 형태를 고쳤다. 기존 ㄸ는 획이 세로로 길어 라틴 문맥에서 <strong>CC로 읽혔다.</strong>
+      각 ㄷ의 가로폭을 넓히고 획을 두껍게 해 한글 자소 비례로 맞췄고, 두 획 사이 틈을 획 두께와 같은
+      3.6으로 고정했다 — 그 틈이 <strong>두 필지를 가르는 길</strong>이다.
+      그다음 <strong>모서리와 끝을 둥글렸다.</strong> 토글에서 이미 라운드가 브랜드에 들어왔으므로
+      마크만 각을 세울 이유가 없다.
+    </p>
+  </header>
+
+  <!-- ── 부드럽기 ─────────────────────────── -->
+  <section data-od-id="mark-softness">
+    <h2>부드럽기</h2>
+    <p class="sub">
+      조인(모서리)과 캡(획 끝)을 각각 조절한 네 단계다. 라운드 반지름은 획 두께의 절반이 상한이라
+      여기서 더 둥글게 하려면 획을 얇게 하는 수밖에 없다 — 그게 04다.
+    </p>
+    <div class="softs">
+      <div class="soft-cell v1 soft-0">
+        <span class="no">01</span>
+        <span class="big"><svg width="76" height="76"><use href="#mk-dd"/></svg></span>
+        <span class="sm"><svg width="24" height="24"><use href="#mk-dd"/></svg>
+          <svg width="16" height="16"><use href="#mk-dd"/></svg></span>
+        <h4>각짐</h4>
+        <p>이전 형태. 지적선 같지만 이름 마크로는 딱딱하다</p>
+      </div>
+      <div class="soft-cell v1 soft-1">
+        <span class="no">02</span>
+        <span class="big"><svg width="76" height="76"><use href="#mk-dd"/></svg></span>
+        <span class="sm"><svg width="24" height="24"><use href="#mk-dd"/></svg>
+          <svg width="16" height="16"><use href="#mk-dd"/></svg></span>
+        <h4>모서리만</h4>
+        <p>꺾이는 곳만 둥글고 획 끝은 각지다. 절반만 푼 상태</p>
+      </div>
+      <div class="soft-cell v1 soft-2 pick">
+        <span class="no">03</span>
+        <span class="big"><svg width="76" height="76"><use href="#mk-dd"/></svg></span>
+        <span class="sm"><svg width="24" height="24"><use href="#mk-dd"/></svg>
+          <svg width="16" height="16"><use href="#mk-dd"/></svg></span>
+        <h4>모서리 + 끝</h4>
+        <p>네 모서리와 획 끝 모두 반지름 1.8. 무게는 그대로 두고 인상만 눅인다</p>
+      </div>
+      <div class="soft-cell v1 soft-3">
+        <span class="no">04</span>
+        <span class="big"><svg width="76" height="76"><use href="#mk-dd"/></svg></span>
+        <span class="sm"><svg width="24" height="24"><use href="#mk-dd"/></svg>
+          <svg width="16" height="16"><use href="#mk-dd"/></svg></span>
+        <h4>더 가볍게</h4>
+        <p>획을 3.2로 줄여 틈이 넓어진다. 가장 부드럽지만 16px에서 힘이 빠진다</p>
+      </div>
+    </div>
+    <p class="t-label" style="margin-top:var(--sp-4);max-width:64ch">
+      아래 전개는 전부 <strong>03</strong>으로 그려져 있다. 01·02·04로 바꾸려면 CSS 한 줄
+      (<code style="font-family:var(--font-mono);font-size:14px">--mk-join</code> /
+      <code style="font-family:var(--font-mono);font-size:14px">--mk-cap</code> /
+      <code style="font-family:var(--font-mono);font-size:14px">--mk-w</code>)만 바꾸면 된다.
+    </p>
+  </section>
+
+  <section data-od-id="mark-variants">
+    <h2>대표색을 얹는 네 가지</h2>
+    <p class="sub">색은 전부 기존 토큰이다. 새 색을 만들지 않았다.</p>
+
+    <!-- 1 -->
+    <div class="variant">
+      <div>
+        <span class="no">01</span>
+        <h3>단색 — 벽돌</h3>
+        <p>두 획 모두 <strong>대표색</strong>. 가장 단순하고, 1도 인쇄·자수·각인까지 그대로 간다.</p>
+        <div class="note-s">색이 하나라 어디에 놓아도 흔들리지 않는다.
+          대신 “두 필지”라는 이야기는 형태에만 남는다.</div>
+      </div>
+      <div class="specs v1">
+        <div class="size"><svg width="64" height="64"><use href="#mk-dd"/></svg><span class="cap">64</span></div>
+        <div class="size"><svg width="32" height="32"><use href="#mk-dd"/></svg><span class="cap">32</span></div>
+        <div class="size"><svg width="16" height="16"><use href="#mk-dd"/></svg><span class="cap">16</span></div>
+        <div class="size"><div class="tile"><svg width="44" height="44"><use href="#mk-dd"/></svg></div><span class="cap">타일</span></div>
+        <div class="size"><div class="lockup"><svg width="30" height="30"><use href="#mk-dd"/></svg>
+          <span class="wordmark">DDoToRo</span></div><span class="cap">잠금</span></div>
+      </div>
+    </div>
+
+    <!-- 2 -->
+    <div class="variant">
+      <div>
+        <span class="no">02</span>
+        <h3>단계 — 램프 2단</h3>
+        <p>왼쪽 획은 <strong>램프 4단계</strong>, 오른쪽은 <strong>대표색</strong>.
+          두 획의 농도 차가 곧 <strong>땅값의 차이</strong>다.</p>
+        <div class="note-s">지도에서 필지를 칠하는 언어를 마크가 그대로 쓴다.
+          이 서비스가 파는 것이 “땅”이 아니라 “땅의 값”임을 이름 안에서 말한다.</div>
+      </div>
+      <div class="specs v2">
+        <div class="size"><svg width="64" height="64"><use href="#mk-dd"/></svg><span class="cap">64</span></div>
+        <div class="size"><svg width="32" height="32"><use href="#mk-dd"/></svg><span class="cap">32</span></div>
+        <div class="size"><svg width="16" height="16"><use href="#mk-dd"/></svg><span class="cap">16</span></div>
+        <div class="size"><div class="tile"><svg width="44" height="44"><use href="#mk-dd"/></svg></div><span class="cap">타일</span></div>
+        <div class="size"><div class="lockup"><svg width="30" height="30"><use href="#mk-dd"/></svg>
+          <span class="wordmark">DDoToRo</span></div><span class="cap">잠금</span></div>
+      </div>
+    </div>
+
+    <!-- 3 -->
+    <div class="variant">
+      <div>
+        <span class="no">03</span>
+        <h3>먹 + 벽돌</h3>
+        <p>왼쪽은 <strong>먹</strong>, 오른쪽만 <strong>대표색</strong>.
+          무채색 시스템에 강조가 한 점 찍히는 구조 그대로다.</p>
+        <div class="note-s">본문·UI가 전부 먹인 화면에서 마크만 튀지 않는다.
+          대비가 가장 강해 작은 크기에서도 두 획이 확실히 갈린다.</div>
+      </div>
+      <div class="specs v3">
+        <div class="size"><svg width="64" height="64"><use href="#mk-dd"/></svg><span class="cap">64</span></div>
+        <div class="size"><svg width="32" height="32"><use href="#mk-dd"/></svg><span class="cap">32</span></div>
+        <div class="size"><svg width="16" height="16"><use href="#mk-dd"/></svg><span class="cap">16</span></div>
+        <div class="size"><div class="tile"><svg width="44" height="44"><use href="#mk-dd"/></svg></div><span class="cap">타일</span></div>
+        <div class="size"><div class="lockup"><svg width="30" height="30"><use href="#mk-dd"/></svg>
+          <span class="wordmark">DDoToRo</span></div><span class="cap">잠금</span></div>
+      </div>
+    </div>
+
+    <!-- 4 -->
+    <div class="variant">
+      <div>
+        <span class="no">04</span>
+        <h3>반전 타일</h3>
+        <p><strong>대표색 바탕</strong> + 종이색 ㄸ. 앱 아이콘·파비콘·OG 이미지처럼
+          <strong>자기 바탕을 갖는 자리</strong> 전용이다.</p>
+        <div class="note-s">흰 배경 위에 이 타일을 얹으면 존재감이 가장 크다.
+          단, 본문 안에 섞어 쓰면 광고 배너처럼 보인다 — 위 1~3과 짝으로 운영한다.</div>
+      </div>
+      <div class="specs v4">
+        <div class="size"><div class="tile tile-fill"><svg width="44" height="44"><use href="#mk-dd"/></svg></div><span class="cap">타일</span></div>
+        <div class="size"><div class="tile tile-fill" style="width:40px;height:40px"><svg width="26" height="26"><use href="#mk-dd"/></svg></div><span class="cap">40</span></div>
+        <div class="size"><div class="tile tile-fill" style="width:16px;height:16px;border-width:0"><svg width="12" height="12"><use href="#mk-dd"/></svg></div><span class="cap">16</span></div>
+        <div class="size"><div class="tile tile-ink"><svg width="44" height="44"><use href="#mk-dd"/></svg></div><span class="cap">먹 타일</span></div>
+        <div class="size"><div class="lockup"><div class="tile tile-fill" style="width:34px;height:34px">
+          <svg width="22" height="22"><use href="#mk-dd"/></svg></div>
+          <span class="wordmark">DDoToRo</span></div><span class="cap">잠금</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16px -->
+  <section data-od-id="mark-16">
+    <h2>16px 판독</h2>
+    <p class="sub">브라우저 탭에서 실제로 보이는 크기다.</p>
+    <div class="test-row">
+      <div class="tab-sim v1"><svg width="16" height="16"><use href="#mk-dd"/></svg><span>01 단색</span></div>
+      <div class="tab-sim v2"><svg width="16" height="16"><use href="#mk-dd"/></svg><span>02 단계</span></div>
+      <div class="tab-sim v3"><svg width="16" height="16"><use href="#mk-dd"/></svg><span>03 먹+벽돌</span></div>
+      <div class="tab-sim"><div class="tile tile-fill v4" style="width:16px;height:16px;border-width:0">
+        <svg width="12" height="12"><use href="#mk-dd"/></svg></div><span>04 반전</span></div>
+    </div>
+  </section>
+
+  <!-- 운용 -->
+  <section data-od-id="mark-rules">
+    <h2>운용 규칙</h2>
+    <p class="sub">마크는 한 번 정하면 바꾸지 않는 것이 자산이 된다. 아래만 지키면 된다.</p>
+    <div class="rules-grid">
+      <div class="rule-cell">
+        <div class="lab">여백 — 획 두께 1개분</div>
+        <div style="display:inline-block;padding:11px;border:1px dashed var(--border-str)">
+          <span class="v1" style="display:block"><svg width="56" height="56"><use href="#mk-dd"/></svg></span>
+        </div>
+        <div class="note-s" style="margin-top:var(--sp-3)">마크 사방에 획 두께만큼(마크 폭의 약 11%)을 비운다.
+          점선은 그 경계이며 실제로 그리지 않는다.</div>
+      </div>
+      <div class="rule-cell">
+        <div class="lab">최소 크기 — 16px</div>
+        <div class="v1" style="display:flex;align-items:flex-end;gap:var(--sp-4)">
+          <svg width="16" height="16"><use href="#mk-dd"/></svg>
+          <svg width="24" height="24"><use href="#mk-dd"/></svg>
+          <svg width="32" height="32"><use href="#mk-dd"/></svg>
+        </div>
+        <div class="note-s" style="margin-top:var(--sp-3)">16px 미만에서는 두 획 사이 틈이 메워진다.
+          더 작아져야 하면 반전 타일(04)을 쓴다.</div>
+      </div>
+      <div class="rule-cell">
+        <div class="lab">하지 않는 것</div>
+        <div style="display:flex;gap:var(--sp-5);align-items:center">
+          <span class="bad" style="display:inline-block">
+            <svg width="44" height="44" class="v1" style="transform:skewX(-12deg)"><use href="#mk-dd"/></svg></span>
+          <span class="bad" style="display:inline-block">
+            <svg width="44" height="44" class="v1" style="opacity:0.35"><use href="#mk-dd"/></svg></span>
+          <span class="bad" style="display:inline-block">
+            <svg width="44" height="44" style="--mk-l:oklch(58% 0.16 145);--mk-r:oklch(58% 0.16 145)"><use href="#mk-dd"/></svg></span>
+        </div>
+        <div class="note-s" style="margin-top:var(--sp-3)">기울이기 · 투명도로 흐리기 · 시스템 밖의 색.
+          획 두께를 바꾸거나 두 획의 틈을 넓히는 것도 금지한다.</div>
+      </div>
+      <div class="rule-cell">
+        <div class="lab">배경 위</div>
+        <div style="display:flex;gap:var(--sp-3);align-items:center">
+          <div class="tile" style="width:56px;height:56px"><span class="v1"><svg width="34" height="34"><use href="#mk-dd"/></svg></span></div>
+          <div class="tile tile-ink" style="width:56px;height:56px"><span class="on-fill"><svg width="34" height="34"><use href="#mk-dd"/></svg></span></div>
+          <div class="tile tile-fill" style="width:56px;height:56px"><span class="on-fill"><svg width="34" height="34"><use href="#mk-dd"/></svg></span></div>
+        </div>
+        <div class="note-s" style="margin-top:var(--sp-3)">밝은 바탕에는 벽돌, 먹·벽돌 바탕에는 종이색.
+          사진 위에는 얹지 않는다 — 얹어야 하면 반전 타일을 쓴다.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 규격 -->
+  <section data-od-id="mark-spec" style="border-bottom:0">
+    <h2>규격과 추천</h2>
+    <table class="spec">
+      <tbody>
+        <tr><td>viewBox</td><td><code>0 0 32 32</code></td></tr>
+        <tr><td>각 ㄷ</td><td>11.6 × 20 · 획 두께 <code>3.6</code></td></tr>
+        <tr><td>모서리 · 획 끝</td><td><code>stroke-linejoin: round</code> · <code>stroke-linecap: round</code><br>
+          반지름은 획 두께의 절반(1.8)이며 그 이상은 나오지 않는다</td></tr>
+        <tr><td>두 획 사이 틈</td><td><code>3.6</code> — 획 두께와 같다. 이 비례를 바꾸지 않는다</td></tr>
+        <tr><td>대표색</td><td><code>--accent</code> · <code>oklch(52% 0.10 28)</code></td></tr>
+        <tr><td>램프 4단계</td><td><code>--p4</code> · <code>oklch(64% 0.120 32)</code> (변형 02)</td></tr>
+        <tr><td>먹</td><td><code>--ink</code> · <code>oklch(20% 0.018 70)</code> (변형 03)</td></tr>
+        <tr><td>최소 크기</td><td>16px. 그 이하는 반전 타일</td></tr>
+        <tr><td>여백</td><td>사방으로 획 두께 1개분</td></tr>
+      </tbody>
+    </table>
+
+    <p style="max-width:64ch;margin-top:var(--sp-6);color:var(--muted)">
+      추천은 <strong style="color:var(--fg)">02 단계</strong>를 주 마크로, <strong style="color:var(--fg)">04 반전 타일</strong>을
+      파비콘·앱 아이콘으로 짝지어 쓰는 것이다. 02는 두 획의 농도 차만으로 “땅값”을 말해서
+      이름 마크의 유일한 약점(의미가 형태에 없다)을 메운다. 16px에서도 두 획이 갈린다.
+      한 색으로 단순하게 가고 싶으시면 <strong style="color:var(--fg)">01</strong>,
+      제품 화면과 가장 조용히 붙는 것은 <strong style="color:var(--fg)">03</strong>이다.
+    </p>
+    <a class="link nav-back" href="brand-icon-concepts.html">← 시안 4개로</a>
+  </section>
+
+</div>
+</body>
+</html>

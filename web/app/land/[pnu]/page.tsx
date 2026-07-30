@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import BrandMark from "@/components/BrandMark";
 import ParcelSilhouette from "@/components/ParcelSilhouette";
 import { getParcel } from "@/lib/parcel";
 import { SERVICE_AREA } from "@/lib/region";
@@ -94,13 +95,14 @@ export default async function LandPage({ params }: Props) {
       />
 
       <header className="no-print flex items-center gap-3 border-b border-[var(--line)] bg-[var(--surface)] px-6 py-4">
-        <Link
-          href="/"
-          className="font-serif-num text-[19px] font-semibold text-[var(--ink)] no-underline"
-        >
-          DDoToRo
+        {/* 워드마크 잠금 — 마크 + 이름, 부제는 1px 세로선으로 나눈다 (DESIGN.md) */}
+        <Link href="/" className="flex items-center gap-3 no-underline">
+          <BrandMark size={28} />
+          <span className="font-serif-num text-[19px] font-semibold text-[var(--ink)]">
+            DDoToRo
+          </span>
         </Link>
-        <span className="text-[14px] text-[var(--ink-mid)]">
+        <span className="border-l border-[var(--line-strong)] pl-3 text-[14px] text-[var(--ink-mid)]">
           {SERVICE_AREA.short} 땅값 조회
         </span>
       </header>

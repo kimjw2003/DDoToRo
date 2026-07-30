@@ -1,0 +1,12 @@
+<!-- DDoToRo 주 마크 — ㄸ · 먹 + 벽돌 · 라운드
+     왼쪽 획 #1B150D (토큰 ink) / 오른쪽 획 #9A5048 (토큰 accent)
+     oklch 원본: 20% 0.018 70 / 52% 0.10 28
+     획 두께 3.6 · 모서리와 끝 반지름 1.8 · 두 획 사이 틈 3.6
+     주의: XML 주석 안에 하이픈 두 개를 쓰면 파일 전체가 파싱 실패한다 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32"
+     role="img" aria-label="DDoToRo">
+  <path d="M12.4 7.8 H4.4 V24.2 H12.4" fill="none" stroke="#1B150D"
+        stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M27.6 7.8 H19.6 V24.2 H27.6" fill="none" stroke="#9A5048"
+        stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,9 @@
+<!-- DDoToRo 마크 — 단색 벽돌 (색 변형 01)
+     한 색만 쓸 수 있는 자리: 1도 인쇄 · 자수 · 각인 · 워터마크 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32"
+     role="img" aria-label="DDoToRo">
+  <g fill="none" stroke="#9A5048" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M12.4 7.8 H4.4 V24.2 H12.4"/>
+    <path d="M27.6 7.8 H19.6 V24.2 H27.6"/>
+  </g>
+</svg>

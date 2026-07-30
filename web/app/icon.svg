@@ -1,0 +1,12 @@
+<!-- DDoToRo 파비콘 — 벽돌 바탕 + 종이색 ㄸ
+     16px 탭에서 획만으로는 힘이 빠지므로 바탕을 채워 덩어리로 읽히게 한다.
+     마크는 원본 대비 0.8209배로 줄여 사방 여백 5를 확보했다. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32"
+     role="img" aria-label="DDoToRo">
+  <rect width="32" height="32" fill="#9A5048"/>
+  <g transform="translate(2.87 2.87) scale(0.8209)"
+     fill="none" stroke="#F9F8F5" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M12.4 7.8 H4.4 V24.2 H12.4"/>
+    <path d="M27.6 7.8 H19.6 V24.2 H27.6"/>
+  </g>
+</svg>
