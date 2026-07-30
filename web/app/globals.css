@@ -131,6 +131,38 @@ body {
   color: var(--ink-mid);
 }
 
+/*
+  데이터가 아직 없는 항목에 붙인다. 배지 없이 그럴듯한 수치를 노출하지 않는다.
+  예: "표시 예시 · 좌표 연동 전", "외부 API 연동 전"
+*/
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 9px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--ink-mid);
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+/*
+  주의 문구 박스. 경고를 노랑·빨강으로 칠하지 않는다 —
+  테두리 한 단 굵게 + 보조 텍스트 색으로 충분하다.
+*/
+.note {
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-mid);
+}
+
 /* 가격 정보 없는 필지 — 색을 하나 더 늘리지 않고 사선으로 구분한다 */
 .hatch-none {
   background: repeating-linear-gradient(

@@ -93,15 +93,25 @@ export default function MapView() {
       loading={showLoading}
       error={showError}
       onRetry={() => selectedPnu && fetchDetail(selectedPnu)}
+      onClose={() => handleSelect(null)}
     />
   );
 
   return (
-    <main className="flex h-dvh flex-col lg:flex-row">
-      {/* 데스크톱 좌측 패널. 폭 320px 고정 */}
-      <aside className="hidden w-[320px] shrink-0 overflow-y-auto border-r border-[var(--line)] bg-[var(--surface)] lg:block">
-        <header className="border-b border-[var(--line)] px-5 py-4">
-          <h1 className="font-serif-num text-[20px] text-[var(--ink)]">DDoToRo</h1>
+    /*
+      데스크톱 전용이다. 1280px 미만에서는 레이아웃을 줄이지 않고 가로 스크롤한다
+      (.app-shell). 좁은 폭에 억지로 맞추면 패널이 눌려 데스크톱도 모바일도 아닌
+      화면이 된다.
+    */
+    <main className="app-shell flex flex-col lg:flex-row">
+      {/*
+        패널 폭 384px. 1600px 이상에서 416px.
+        1차 320px에서는 지목·면적 2열과 5년 차트가 눌린다.
+        패널 자체는 스크롤하지 않는다 — 탭 내용만 스크롤한다
+      */}
+      <aside className="hidden w-[384px] shrink-0 flex-col overflow-hidden border-r border-[var(--line)] bg-[var(--surface)] lg:flex 2xl:w-[416px]">
+        <header className="border-b border-[var(--line)] px-4 py-4">
+          <h1 className="font-serif-num text-[22px] text-[var(--ink)]">DDoToRo</h1>
           <p className="text-[14px] text-[var(--ink-soft)]">
             경기 양평군 땅값 조회
           </p>

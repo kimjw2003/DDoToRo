@@ -18,7 +18,8 @@ export type ParcelGeometry = {
 export default function ParcelSilhouette({
   geometry,
   pricePerSqm,
-  size = 72,
+  // 2차에서 72 -> 88px. 단독 페이지는 104px를 넘긴다
+  size = 88,
 }: {
   geometry: ParcelGeometry | null;
   pricePerSqm: number | null;
