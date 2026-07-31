@@ -91,6 +91,17 @@ export async function GET(request: Request) {
   const truncated = rows.length > MAX_FEATURES;
   const sliced = truncated ? rows.slice(0, MAX_FEATURES) : rows;
 
+  /*
+    CDN 캐시.
+
+    공시지가는 연 1회(1월 1일 기준), 필지 경계는 그보다도 드물게 바뀐다.
+    같은 화면을 보는 요청끼리 결과가 다를 이유가 없으므로 길게 캐시한다.
+    클라이언트가 bbox를 격자에 맞춰 보내기 때문에(ParcelMap의 snapBbox)
+    URL이 이산적이고, 지도를 되돌리는 이동은 CDN에서 바로 응답된다.
+
+    데이터를 새로 적재하면 재배포로 캐시가 비워진다 — 연 1회 갱신 주기와 맞다.
+    stale-while-revalidate로 만료 뒤에도 일단 옛 응답을 주고 뒤에서 갱신한다.
+  */
   return NextResponse.json({
     type: "FeatureCollection",
     features: sliced.map((r) => ({
@@ -111,5 +122,10 @@ export async function GET(request: Request) {
     too_far: false,
     truncated,
     count: sliced.length,
+  }, {
+    headers: {
+      "Cache-Control":
+        "public, s-maxage=86400, stale-while-revalidate=604800",
+    },
   });
 }

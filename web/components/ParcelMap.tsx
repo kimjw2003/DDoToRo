@@ -38,6 +38,38 @@ import { fillColorExpression, hatchImage, RAMP } from "@/lib/priceRamp";
 const SRC = "parcels";
 const DEBOUNCE_MS = 300;
 
+/**
+ * 필지 요청 좌표를 맞출 격자 크기(도).
+ *
+ * bbox를 화면 그대로 보내면 지도를 1픽셀만 움직여도 URL이 달라져 CDN 캐시가
+ * 매번 빗나간다. 격자에 맞춰 넓혀 보내면 인접한 화면이 같은 URL을 공유하고,
+ * 되돌아오는 이동은 전부 캐시에서 처리된다.
+ *
+ * 격자를 고정값으로 두면 안 된다. 화면 폭이 z15에서 약 0.06도, z19에서
+ * 0.004도라 15배 차이 나기 때문이다 — 고정하면 확대할수록 화면의 몇 배를
+ * 받아오게 된다. 줌이 한 단계 오를 때마다 절반으로 줄여 화면 크기를 따라간다.
+ */
+function gridFor(zoom: number): number {
+  // z15 화면 폭의 약 1/4. 이보다 잘게 쪼개면 캐시 키가 흩어져 적중률이 떨어진다
+  return 0.016 / 2 ** (Math.floor(zoom) - MIN_PARCEL_ZOOM);
+}
+
+/** 격자 바깥으로 넓힌다. 좁히면 화면 가장자리 필지가 빠진다 */
+function snapBbox(
+  b: { minLng: number; minLat: number; maxLng: number; maxLat: number },
+  zoom: number,
+) {
+  const g = gridFor(zoom);
+  // 부동소수점 찌꺼기가 URL에 섞이면 그 자체로 캐시 키가 갈라진다
+  const fix = (v: number) => Number(v.toFixed(5));
+  return {
+    minLng: fix(Math.floor(b.minLng / g) * g),
+    minLat: fix(Math.floor(b.minLat / g) * g),
+    maxLng: fix(Math.ceil(b.maxLng / g) * g),
+    maxLat: fix(Math.ceil(b.maxLat / g) * g),
+  };
+}
+
 /*
   클릭·호버 대상 레이어.
   가격이 있는 필지와 없는 필지를 서로 다른 레이어로 그리므로 둘 다 잡아야 한다.
@@ -514,7 +546,16 @@ export default function ParcelMap({
     }
 
     const b = m.getBounds();
-    const bbox = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(",");
+    const s = snapBbox(
+      {
+        minLng: b.getWest(),
+        minLat: b.getSouth(),
+        maxLng: b.getEast(),
+        maxLat: b.getNorth(),
+      },
+      zoom,
+    );
+    const bbox = [s.minLng, s.minLat, s.maxLng, s.maxLat].join(",");
 
     // 이동이 빠르면 이전 요청이 늦게 도착해 화면을 덮어쓴다. 직전 요청을 취소한다
     abort.current?.abort();
