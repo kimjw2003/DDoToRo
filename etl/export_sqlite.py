@@ -19,6 +19,7 @@ ST_MakeValid 같은 정제는 여전히 PostGIS(로컬)가 맡으므로 ETL은 �
 
 import argparse
 import json
+import pathlib
 import os
 import sqlite3
 import time
@@ -159,8 +160,18 @@ def dsn() -> str:
     )
 
 
-def export_parcels(pg, db, limit: int | None) -> int:
-    """필지 + 이력 + bbox를 한 번에 읽어 옮긴다."""
+def export_parcels(pg, db, limit: int | None, precision: int, simplify: float) -> int:
+    """필지 + 이력 + bbox를 한 번에 읽어 옮긴다.
+
+    precision을 낮추거나 simplify를 켜면 파일이 작아진다. 파일 크기는 곧
+    Turso 업로드·복원 시간이므로, 3.5GB가 버거울 때 줄이는 손잡이다.
+    경계상자(minx…maxy)는 반드시 '원본' geometry에서 뽑는다 —
+    단순화한 도형에서 재면 상자가 원본보다 작아져 조회에서 필지가 누락된다.
+    """
+    geom = "p.geom"
+    if simplify > 0:
+        geom = f"ST_SimplifyPreserveTopology(p.geom, {simplify})"
+
     sql = f"""
         SELECT p.pnu, p.sigungu_cd, p.sido, p.sigungu, p.emd, p.ri,
                p.jibun, p.jimok, p.area_sqm, p.price_per_sqm, p.price_year,
@@ -168,7 +179,7 @@ def export_parcels(pg, db, limit: int | None) -> int:
                ST_Y(ST_Centroid(p.geom)) AS lat,
                ST_XMin(p.geom) AS minx, ST_XMax(p.geom) AS maxx,
                ST_YMin(p.geom) AS miny, ST_YMax(p.geom) AS maxy,
-               ST_AsGeoJSON(p.geom, {COORD_PRECISION}) AS geojson,
+               ST_AsGeoJSON({geom}, {precision}) AS geojson,
                (SELECT json_agg(json_build_array(h.price_year, h.price_per_sqm)
                                 ORDER BY h.price_year)
                   FROM parcel_price_history h WHERE h.pnu = p.pnu) AS hist
@@ -236,19 +247,25 @@ def copy_table(pg, db, select: str, insert: str, label: str) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=0, help="표본 크기 측정용")
+    ap.add_argument("--out", default=str(OUT), help="출력 파일 경로")
+    ap.add_argument("--precision", type=int, default=COORD_PRECISION,
+                    help="좌표 소수 자릿수. 6=약 10cm, 5=약 1m")
+    ap.add_argument("--simplify", type=float, default=0.0,
+                    help="도형 단순화 허용오차(도). 0.000005면 약 0.5m")
     args = ap.parse_args()
+    out = pathlib.Path(args.out)
 
     load_dotenv(ROOT / ".env")
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    if OUT.exists():
-        OUT.unlink()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    if out.exists():
+        out.unlink()
 
     t0 = time.time()
-    db = sqlite3.connect(OUT)
+    db = sqlite3.connect(out)
     db.executescript(SCHEMA)
 
     with psycopg.connect(dsn()) as pg:
-        n = export_parcels(pg, db, args.limit or None)
+        n = export_parcels(pg, db, args.limit or None, args.precision, args.simplify)
 
         copy_table(
             pg, db,
@@ -289,9 +306,9 @@ def main() -> None:
     db.execute("VACUUM")
     db.close()
 
-    mb = OUT.stat().st_size / 1048576
+    mb = out.stat().st_size / 1048576
     print("=" * 60)
-    print(f"{OUT}  {mb:,.0f} MB  ({time.time()-t0:.0f}초)")
+    print(f"{out}  {mb:,.0f} MB  ({time.time()-t0:.0f}초)")
     if args.limit:
         full = mb * (5_210_960 / n)
         print(f"전체 {5_210_960:,}건 환산 추정: {full:,.0f} MB "
