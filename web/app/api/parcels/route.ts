@@ -1,9 +1,25 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 
-// z15 미만에서는 필지를 그리지 않는다. 34만 건을 한 번에 내려보내면 브라우저가 죽는다.
+// z15 미만에서는 필지를 그리지 않는다. 수백만 건을 한 번에 내려보낼 수 없다.
 const MIN_ZOOM = 15;
 const MAX_FEATURES = 3000;
+
+/*
+  상한에 걸릴 때 무엇을 남길 것인가.
+
+  z16 화면 하나에 필지가 5,000~15,000개 들어온다 — 시골도 마찬가지다
+  (가평 7,871 · 양평 8,882). 상한 3,000개는 거의 모든 화면에서 걸리므로
+  '잘리느냐'가 아니라 '무엇이 남느냐'가 실제 문제다.
+
+  예전에는 순서를 정하지 않아 아무거나 남았고, 그래서 눈에 띄는 큰 필지가
+  빠지고 몇 픽셀짜리가 자리를 차지했다(z16에서 1픽셀은 약 2.4m, 100㎡ 필지는
+  4×4 픽셀이다). 면적 큰 것부터 채우면 화면에서 의미 있는 것이 남는다.
+
+  최소 면적 임계값을 두는 방법도 재봤지만 버렸다. 도심은 작은 필지가 많고
+  시골은 큰 필지가 많아 같은 값이 지역마다 전혀 다르게 작동한다 —
+  300㎡로 걸러도 양평은 10,591개가 남았다. 정렬은 그 차이에 저절로 적응한다.
+*/
 
 type Row = {
   pnu: string;
@@ -80,6 +96,9 @@ export async function GET(request: Request) {
        FROM parcel
       WHERE minx BETWEEN ? AND ? AND maxx >= ?
         AND miny BETWEEN ? AND ? AND maxy >= ?
+      -- 상한에 걸리면 큰 필지부터 남긴다 (위 주석 참고).
+      -- bbox 인덱스로 좁힌 뒤 정렬하므로 양평 74ms · 성남 50ms에 그친다
+      ORDER BY area_sqm DESC
       LIMIT ?`,
     [
       bbox.minLng - BBOX_MARGIN_LNG, bbox.maxLng, bbox.minLng,
