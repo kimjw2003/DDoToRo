@@ -6,9 +6,15 @@ import { createClient, type Client, type InValue } from "@libsql/client";
   PostGIS를 쓰지 않는다. 공간 연산은 적재 시점(etl/export_sqlite.py)에 끝내고
   여기서는 단순 조회만 한다 — 중심점·경계상자·분위수가 모두 컬럼으로 굳어 있다.
 
-  URL 두 가지를 모두 받는다.
+  URL 세 가지를 받는다.
     file:/절대경로/ddotoro.db   로컬 파일. 배포 전 검증용
-    libsql://<db>.turso.io      원격. 이때만 authToken이 필요하다
+    https://<db>.turso.io       원격 HTTP  — 배포에는 반드시 이쪽
+    libsql://<db>.turso.io      원격 WebSocket
+
+  **배포에서 libsql://를 쓰지 말 것.** 서버리스는 인스턴스 재사용이 보장되지
+  않아 콜드스타트마다 WebSocket 핸드셰이크를 다시 치른다. 실측으로
+  첫 쿼리 1,540ms / 이후 257ms였고, 같은 조건에서 https://는 151~206ms로
+  콜드 페널티가 없었다. 지도 조회가 요청마다 1.5초씩 느려지는 차이다.
 
   dev 모드는 파일이 바뀔 때마다 모듈을 다시 평가하므로 globalThis에 담아
   저장할 때마다 커넥션이 새로 생기는 것을 막는다.
