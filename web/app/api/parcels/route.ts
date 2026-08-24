@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 
+/*
+  ⚠ 지도는 더 이상 이 라우트를 쓰지 않는다.
+
+  ParcelMap이 web/lib/tiles.ts를 거쳐 미리 구워둔 정적 타일을 받는다.
+  전국으로 넓히면 필지 행이 DB에 들어가지 않기 때문이다 —
+  경기도만 3.5GB이고 전국은 26GB로, 무료 한도 5GB를 한참 넘는다.
+
+  지우지 않고 두는 이유는 parcel 테이블이 아직 살아 있기 때문이다.
+  상세 페이지는 details/ 파일로 옮겼고, 남은 것은 검색(api/search)과
+  opengraph-image의 필지 수 집계뿐이다. 그 둘까지 옮기면 이 파일도 같이 지운다.
+*/
+
 // z15 미만에서는 필지를 그리지 않는다. 수백만 건을 한 번에 내려보낼 수 없다.
 const MIN_ZOOM = 15;
 const MAX_FEATURES = 3000;
@@ -115,8 +127,8 @@ export async function GET(request: Request) {
 
     공시지가는 연 1회(1월 1일 기준), 필지 경계는 그보다도 드물게 바뀐다.
     같은 화면을 보는 요청끼리 결과가 다를 이유가 없으므로 길게 캐시한다.
-    클라이언트가 bbox를 격자에 맞춰 보내기 때문에(ParcelMap의 snapBbox)
-    URL이 이산적이고, 지도를 되돌리는 이동은 CDN에서 바로 응답된다.
+    클라이언트가 bbox를 격자에 맞춰 보냈기 때문에 URL이 이산적이고,
+    지도를 되돌리는 이동은 CDN에서 바로 응답됐다.
 
     데이터를 새로 적재하면 재배포로 캐시가 비워진다 — 연 1회 갱신 주기와 맞다.
     stale-while-revalidate로 만료 뒤에도 일단 옛 응답을 주고 뒤에서 갱신한다.
