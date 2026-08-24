@@ -11,7 +11,8 @@
 | `mark-mono.svg` | 흑백 문서 · 팩스 |
 | `mark-reverse.svg` | 먹·벽돌처럼 어두운 바탕 위 |
 | `favicon.svg` | 브라우저 탭 (벽돌 바탕 + 종이색 ㄸ) |
-| `app-icon.svg` | 512×512 앱 아이콘 |
+| `app-icon.svg` | 512×512 앱 아이콘 (원본) |
+| `app-icon-512.png` | 512×512 **래스터.** SVG를 못 받는 자리 — 앱 스토어, 카카오·네이버 공유, OS 런처 |
 | `og-image.svg` | OG 이미지 **원본** — 그대로 배포하지 않는다(아래 참고) |
 
 ## 색
@@ -52,7 +53,8 @@ App Router는 파일 이름만으로 자동 인식한다.
 
 ```
 web/app/icon.svg          ← favicon.svg 를 복사
-web/app/apple-icon.png    ← app-icon.svg 를 180×180 PNG로 변환
+web/app/apple-icon.png    ← app-icon.svg 를 180×180 PNG로 굽는다
+                             (큰 PNG를 축소하면 획 가장자리에 노이즈가 남는다)
 web/app/opengraph-image.tsx
 ```
 

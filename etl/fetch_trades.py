@@ -30,7 +30,9 @@ import requests
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).parent.parent
-API = "http://apis.data.go.kr/1613000/RTMSDataSvcLandTrade/getRTMSDataSvcLandTrade"
+# https를 쓴다. 같은 엔드포인트인데 http는 응답이 25초씩 걸려 30초 타임아웃에
+# 간헐적으로 걸린다 (2026-08-07 실측: http 25.0s vs https 0.06s)
+API = "https://apis.data.go.kr/1613000/RTMSDataSvcLandTrade/getRTMSDataSvcLandTrade"
 MONTHS = 36
 SLEEP = 0.3
 RETRIES = 3
