@@ -15,7 +15,10 @@
 import { createClient } from "../web/node_modules/@libsql/client/lib-esm/node.js";
 import { readFileSync } from "node:fs";
 
-const LOCAL = "file:/Users/kimjw/Documents/Project/DDoToRo/etl/out/ddotoro.db";
+// --local=<경로>로 바꿀 수 있다. 실거래만 갱신할 때는 그때 내보낸 파일을 가리켜야 한다
+const LOCAL =
+  process.argv.find((a) => a.startsWith("--local="))?.slice("--local=".length) ??
+  "file:/Users/kimjw/Documents/Project/DDoToRo/etl/out/ddotoro.db";
 const URL = process.env.TURSO_DATABASE_URL;
 const TOKEN = process.env.TURSO_AUTH_TOKEN;
 
@@ -49,8 +52,76 @@ async function schema() {
 
 const fmt = (n) => n.toLocaleString("ko-KR");
 
+/**
+ * 표 몇 개만 지우고 다시 넣는다.
+ *
+ * 통짜 적재(아래 main)는 이미 데이터가 있는 표를 건너뛰므로 갱신에 쓸 수 없다.
+ * 실거래는 매달 새로 들어오고 신고 지연으로 최근 1~2개월이 나중에 채워지는데,
+ * 그때마다 521만 필지를 다시 밀어넣을 이유가 없다.
+ *
+ * DELETE와 INSERT를 batch 하나에 묶는다 — libSQL이 이걸 한 트랜잭션으로 실행하므로
+ * 중간에 끊겨도 표가 빈 채로 남지 않는다. 운영 DB를 건드리는 작업이라 중요하다.
+ */
+async function replaceTables(local, remote, names) {
+  for (const t of names) {
+    const rs = await local.execute(`SELECT * FROM ${t}`);
+
+    /*
+      원격에 없는 표면 먼저 만든다.
+
+      --replace는 원래 있는 표를 갱신하는 용도라 없으면 DELETE에서 죽었다.
+      새 표(station 같은)를 처음 올릴 때 통짜 적재를 다시 돌릴 이유는 없으므로
+      로컬 DDL을 그대로 가져다 만든다.
+    */
+    const ddl = await local.execute({
+      sql: "SELECT sql FROM sqlite_master WHERE type='table' AND name=?",
+      args: [t],
+    });
+    if (!ddl.rows.length) throw new Error(`로컬에 ${t} 표가 없다`);
+    try {
+      await remote.execute(ddl.rows[0].sql);
+      console.log(`  ${t}  원격에 없어 새로 만듦`);
+    } catch (e) {
+      if (!String(e.message).includes("already exists")) throw e;
+    }
+
+    const before = await remote.execute(`SELECT count(*) AS n FROM ${t}`);
+
+    const cols = rs.columns;
+    const ph = cols.map(() => "?").join(",");
+    const sql = `INSERT INTO ${t} (${cols.join(",")}) VALUES (${ph})`;
+
+    await remote.batch(
+      [
+        { sql: `DELETE FROM ${t}`, args: [] },
+        ...rs.rows.map((r) => ({ sql, args: cols.map((c) => r[c]) })),
+      ],
+      "write",
+    );
+
+    const after = await remote.execute(`SELECT count(*) AS n FROM ${t}`);
+    console.log(
+      `  ${t}  ${fmt(Number(before.rows[0].n))} -> ${fmt(Number(after.rows[0].n))}건`,
+    );
+  }
+}
+
 async function main() {
   const reset = process.argv.includes("--reset");
+
+  /*
+    --replace 표1,표2   그 표만 갈아끼우고 끝낸다.
+    큰 표에는 쓰지 말 것 — 한 batch에 다 담으므로 요청이 그만큼 커진다.
+  */
+  const replaceArg = process.argv.find((a) => a.startsWith("--replace="));
+  if (replaceArg) {
+    const names = replaceArg.slice("--replace=".length).split(",").filter(Boolean);
+    console.log(`갈아끼울 표: ${names.join(", ")}`);
+    await replaceTables(local, remote, names);
+    console.log("완료");
+    return;
+  }
+
   const { tables, indexes } = await schema();
 
   if (reset) {

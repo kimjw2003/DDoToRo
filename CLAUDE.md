@@ -62,6 +62,7 @@
 | 데이터 | 형태 | 상태 |
 |---|---|---|
 | 국토교통부_개별공시지가정보 | SHP (EPSG:5186, cp949) | 다운로드 완료 — **시도 단위 배포**라 `AL_D150_41_*` 하나에 경기도 전체가 들어 있다 (4.4GB, 6개 파일로 분할) |
+| 전철·철도 역 | OpenStreetMap (Overpass API) | 수집 완료 — `etl/fetch_stations.py`, 703개 |
 | 국토교통부_연속지적_전국 | SHP | 조건부 (아래 참고) |
 | 국토교통부_토지 매매 실거래가 자료 | 오픈API | 인증키 발급 완료 |
 | 법정동코드 | CSV (code.go.kr) | 다운로드 |
@@ -70,6 +71,27 @@
 ### 중요: 연속지적도 사용 여부는 미확정
 개별공시지가 SHP에 Polygon geometry와 지가가 모두 들어있다면 연속지적도는 **사용하지 않는다**.
 Task 1에서 이걸 먼저 확인한다. 확인 전에 조인 로직을 작성하지 말 것.
+
+### 역 데이터 (OSM)
+
+`etl/fetch_stations.py`가 Overpass에서 받아 `station` 테이블에 넣는다.
+지역명을 박지 않으려고 bbox를 인자로 받는다.
+
+```
+python fetch_stations.py                       # 수도권 전역
+python export_sqlite.py --stations-only        # SQLite 갱신
+node push_turso.mjs --local=file:<경로>/ddotoro.db --replace=station
+```
+
+- **User-Agent를 반드시 보낸다.** requests 기본값이면 Overpass가 406을 준다
+- 질의는 **한 번**이다. 나눠 쏘면 공용 인스턴스에서 429가 난다. 막히면 `--endpoint kumi`
+- `--raw-in`으로 저장해 둔 응답에 변환만 다시 돌릴 수 있다 (한도가 빡빡해 자주 못 받는다)
+- **노선명을 이름으로 잇지 말 것.** 양평역은 경의중앙선(양평군)과 5호선(영등포구) 두 곳이라
+  이름으로 매칭하면 섞인다. 좌표 근접(250m)으로 잇는다
+- **OSM은 ODbL이라 화면에 출처를 표기해야 한다** (`ParcelPanel.tsx`의 주변 탭)
+- 노선명이 없는 역이 5% 있다(서해선 등 route 관계 미등록). 이름·거리만 보여주고 그 줄은 감춘다
+- 공공데이터포털 `전국도시철도역사정보표준데이터`(15013205)로 갈아타려면
+  `fetch_stations.py`의 `to_rows()` 출력 모양만 맞추면 된다. 데이터셋별 활용신청이 필요하다
 
 ### 실거래가 API
 ```

@@ -617,7 +617,13 @@ function NearTab({ parcel }: { parcel: ParcelDetail }) {
                 <CategoryIcon kind="station" />
                 <div className="min-w-0 flex-1">
                   <p className="text-[16px] text-[var(--ink)]">{s.name}</p>
-                  <p className="t-label text-[var(--ink-mid)]">{s.line}</p>
+                  {/*
+                    노선명이 없는 역이 있다(서해선처럼 OSM에 route 관계가 아직 없는 노선).
+                    빈 <p>를 두면 그 줄만 높이가 뜨므로 아예 그리지 않는다
+                  */}
+                  {s.line && (
+                    <p className="t-label text-[var(--ink-mid)]">{s.line}</p>
+                  )}
                 </div>
                 {/* 직선거리가 주 표기, 소요시간은 보조다 */}
                 <div className="shrink-0 text-right">
@@ -633,8 +639,21 @@ function NearTab({ parcel }: { parcel: ParcelDetail }) {
           </ul>
         )}
 
+        {/*
+          출처 표기는 선택이 아니다. 역 좌표·노선명은 OpenStreetMap에서 왔고
+          ODbL이 표기를 요구한다 (etl/fetch_stations.py).
+        */}
         <p className="t-label mt-3 text-[var(--ink-soft)]">
-          직선거리입니다. 실제 도로 거리와 다를 수 있습니다.
+          직선거리입니다. 실제 도로 거리와 다를 수 있습니다. 역 정보 ©{" "}
+          <a
+            href="https://www.openstreetmap.org/copyright"
+            target="_blank"
+            rel="noreferrer"
+            className="underline decoration-1 underline-offset-[3px]"
+          >
+            OpenStreetMap
+          </a>{" "}
+          기여자
         </p>
       </section>
 

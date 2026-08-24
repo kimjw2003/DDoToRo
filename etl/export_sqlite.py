@@ -121,6 +121,21 @@ CREATE TABLE region_summary (
   parcel_count    INTEGER,
   median_official INTEGER
 );
+
+/*
+  전철·철도 역. 출처는 OpenStreetMap이다(etl/fetch_stations.py).
+
+  700행 남짓이라 인덱스를 두지 않는다 — 필지 하나당 전체를 훑어도
+  SQLite에서는 밀리초 단위다. lat 범위로 먼저 자르는 것은 쿼리가 한다.
+*/
+CREATE TABLE station (
+  osm_id INTEGER PRIMARY KEY,
+  name   TEXT NOT NULL,
+  line   TEXT,
+  lng    REAL NOT NULL,
+  lat    REAL NOT NULL,
+  kind   TEXT
+);
 """
 
 INDEXES = """
@@ -244,6 +259,104 @@ def copy_table(pg, db, select: str, insert: str, label: str) -> None:
     print(f"  {label} {len(rows):,}건")
 
 
+"""
+실거래 세 표.
+
+전체 내보내기와 --trades-only가 같은 정의를 쓴다. 한쪽만 고치면 갱신할 때마다
+집계 기준이 달라지므로 반드시 여기 한 곳에 둔다.
+
+공시지가는 연 1회지만 실거래는 매달 새로 들어오고, 신고가 계약 후 30일 이내라
+최근 1~2개월치는 나중에 더 채워진다. 그때마다 521만 필지를 다시 내보낼 이유가 없다.
+"""
+TRADE_COPIES = [
+    (
+        "land_trade",
+        "SELECT sigungu_cd, emd, ri, deal_ym, deal_day, deal_amount, "
+        "area_sqm, jimok, share_type, cancel_type FROM land_trade",
+        "INSERT INTO land_trade VALUES (?,?,?,?,?,?,?,?,?,?)",
+        "실거래",
+    ),
+    (
+        "emd_trade_avg",
+        "SELECT sigungu_cd, emd, deal_count, avg_price_per_sqm, "
+        "median_price_per_sqm, from_ym, to_ym FROM emd_trade_avg",
+        "INSERT INTO emd_trade_avg VALUES (?,?,?,?,?,?,?)",
+        "읍면동 실거래 집계",
+    ),
+    (
+        # SQLite에는 percentile_cont가 없다. 중앙값은 여기서 구해 굳힌다
+        "sigungu_trade_avg",
+        "SELECT sigungu_cd, count(*), "
+        "  round(percentile_cont(0.5) WITHIN GROUP ("
+        "    ORDER BY deal_amount / NULLIF(area_sqm, 0))::numeric) "
+        "  FROM land_trade "
+        " WHERE area_sqm > 0 AND coalesce(cancel_type, '') = '' "
+        " GROUP BY sigungu_cd",
+        "INSERT INTO sigungu_trade_avg VALUES (?,?,?)",
+        "시군구 실거래 집계",
+    ),
+]
+
+
+def copy_trades(pg, db) -> None:
+    for _, select, insert, label in TRADE_COPIES:
+        copy_table(pg, db, select, insert, label)
+
+
+"""
+역.
+
+정의를 여기 한 곳에 둔다 — 전체 내보내기와 --stations-only가 같은 것을 써야 한다.
+역은 노선이 개통하거나 이름이 바뀔 때만 움직이므로 실거래보다도 드물게 갱신된다.
+그때 521만 필지를 다시 내보낼 이유가 없다.
+"""
+STATION_COPY = (
+    "SELECT osm_id, name, line, lng, lat, kind FROM station",
+    "INSERT INTO station VALUES (?,?,?,?,?,?)",
+    "역",
+)
+
+
+def copy_stations(pg, db) -> None:
+    copy_table(pg, db, *STATION_COPY)
+
+
+def refresh_stations(out: pathlib.Path) -> None:
+    """기존 SQLite의 역 표만 갈아끼운다."""
+    if not out.exists():
+        raise SystemExit(f"{out} 가 없다. --stations-only는 기존 파일을 갱신하는 모드다")
+
+    t0 = time.time()
+    db = sqlite3.connect(out)
+    with psycopg.connect(dsn()) as pg:
+        db.execute("DELETE FROM station")
+        copy_stations(pg, db)
+    db.commit()
+    db.close()
+    print("=" * 60)
+    print(f"{out}  역만 갱신 ({time.time() - t0:.0f}초)")
+
+
+def refresh_trades(out: pathlib.Path) -> None:
+    """기존 SQLite의 실거래 표만 갈아끼운다. 필지·지역 집계는 건드리지 않는다."""
+    if not out.exists():
+        raise SystemExit(f"{out} 가 없다. --trades-only는 기존 파일을 갱신하는 모드다")
+
+    t0 = time.time()
+    db = sqlite3.connect(out)
+    with psycopg.connect(dsn()) as pg:
+        for name, *_ in TRADE_COPIES:
+            db.execute(f"DELETE FROM {name}")
+        copy_trades(pg, db)
+    db.commit()
+    db.close()
+
+    # VACUUM하지 않는다. 지운 자리는 곧 다시 채워지는데 3.5GB 파일을 정리하는
+    # 비용이 그보다 크다 — 실거래는 전체의 0.4%다
+    print("=" * 60)
+    print(f"{out}  실거래만 갱신 ({time.time() - t0:.0f}초)")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=0, help="표본 크기 측정용")
@@ -252,11 +365,30 @@ def main() -> None:
                     help="좌표 소수 자릿수. 6=약 10cm, 5=약 1m")
     ap.add_argument("--simplify", type=float, default=0.0,
                     help="도형 단순화 허용오차(도). 0.000005면 약 0.5m")
+    ap.add_argument(
+        "--trades-only",
+        action="store_true",
+        help="실거래 표만 갈아끼운다. 필지는 손대지 않는다",
+    )
+    ap.add_argument(
+        "--stations-only",
+        action="store_true",
+        help="역 표만 갈아끼운다. 필지는 손대지 않는다",
+    )
     args = ap.parse_args()
     out = pathlib.Path(args.out)
 
     load_dotenv(ROOT / ".env")
     out.parent.mkdir(parents=True, exist_ok=True)
+
+    if args.trades_only:
+        refresh_trades(out)
+        return
+
+    if args.stations_only:
+        refresh_stations(out)
+        return
+
     if out.exists():
         out.unlink()
 
@@ -267,38 +399,14 @@ def main() -> None:
     with psycopg.connect(dsn()) as pg:
         n = export_parcels(pg, db, args.limit or None, args.precision, args.simplify)
 
-        copy_table(
-            pg, db,
-            "SELECT sigungu_cd, emd, ri, deal_ym, deal_day, deal_amount, "
-            "area_sqm, jimok, share_type, cancel_type FROM land_trade",
-            "INSERT INTO land_trade VALUES (?,?,?,?,?,?,?,?,?,?)",
-            "실거래",
-        )
-        copy_table(
-            pg, db,
-            "SELECT sigungu_cd, emd, deal_count, avg_price_per_sqm, "
-            "median_price_per_sqm, from_ym, to_ym FROM emd_trade_avg",
-            "INSERT INTO emd_trade_avg VALUES (?,?,?,?,?,?,?)",
-            "읍면동 실거래 집계",
-        )
+        copy_trades(pg, db)
+        copy_stations(pg, db)
         copy_table(
             pg, db,
             "SELECT level, sigungu_cd, name, sido, sigungu, lng, lat, "
             "parcel_count, median_official FROM region_summary",
             "INSERT INTO region_summary VALUES (?,?,?,?,?,?,?,?,?)",
             "지역 집계",
-        )
-        # SQLite에는 percentile_cont가 없다. 중앙값은 여기서 구해 굳힌다
-        copy_table(
-            pg, db,
-            "SELECT sigungu_cd, count(*), "
-            "  round(percentile_cont(0.5) WITHIN GROUP ("
-            "    ORDER BY deal_amount / NULLIF(area_sqm, 0))::numeric) "
-            "  FROM land_trade "
-            " WHERE area_sqm > 0 AND coalesce(cancel_type, '') = '' "
-            " GROUP BY sigungu_cd",
-            "INSERT INTO sigungu_trade_avg VALUES (?,?,?)",
-            "시군구 실거래 집계",
         )
 
     print("인덱스 생성 중...")

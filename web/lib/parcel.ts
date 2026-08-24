@@ -1,5 +1,5 @@
+import { readAssetJson } from "@/lib/assets.server";
 import { query } from "@/lib/db";
-import { STATIONS } from "@/lib/stations";
 
 /** 필지 상세. API 라우트와 SSR 페이지가 같은 형태를 쓴다. */
 export type Parcel = {
@@ -39,12 +39,18 @@ export type Parcel = {
   } | null;
 };
 
-type Row = {
-  pnu: string;
+/** etl/build_details.py가 굽는 파일 한 개. 지역명은 법정동 안에서 같아 위로 올려 둔다 */
+type DetailFile = {
+  sigungu_cd: string;
   sido: string | null;
   sigungu: string | null;
   emd: string | null;
   ri: string | null;
+  /** 키는 PNU 뒤 9자리 (산여부 + 본번 + 부번) */
+  parcels: Record<string, DetailEntry>;
+};
+
+type DetailEntry = {
   jibun: string | null;
   jimok: string | null;
   area_sqm: number | null;
@@ -52,9 +58,12 @@ type Row = {
   price_year: number | null;
   lng: number;
   lat: number;
-  geometry: string;
-  /** `[[연도, 원/㎡], ...]` JSON 문자열 */
-  price_history: string | null;
+  geometry: Parcel["geometry"];
+  /** `[[연도, 원/㎡], ...]` */
+  price_history: [number, number | null][];
+};
+
+type TradeRow = {
   deal_count: number | null;
   avg_price_per_sqm: number | null;
   median_price_per_sqm: number | null;
@@ -62,7 +71,12 @@ type Row = {
   to_ym: string | null;
 };
 
-/** 이보다 먼 역은 '가까운 역'이 아니다. stations.ts 참고 */
+/**
+ * 이보다 먼 역은 '가까운 역'이 아니다.
+ *
+ * 자르지 않으면 역이 드문 군 지역 필지에 수십 km 밖 역이 붙는다.
+ * 시골 땅에 '가장 가까운 역 38km'는 정보가 아니라 소음이다.
+ */
 const STATION_MAX_M = 15_000;
 
 export function isValidPnu(pnu: string) {
@@ -72,9 +86,9 @@ export function isValidPnu(pnu: string) {
 /**
  * 두 지점의 직선거리(m).
  *
- * PostGIS의 `ST_Distance(geography)`를 대신한다. 역 목록이 짧아 앱에서 재는
- * 편이 쿼리를 도는 것보다 빠르다. 하버사인이라 지구를 구로 보지만,
- * 수 km 범위에서 오차는 0.5% 미만이라 '가까운 역'을 고르는 데 충분하다.
+ * PostGIS의 `ST_Distance(geography)`를 대신한다 — 웹 DB는 SQLite라 공간 함수가 없다.
+ * 하버사인이라 지구를 구로 보지만, 수 km 범위에서 오차는 0.5% 미만이라
+ * '가까운 역'을 고르는 데 충분하다.
  */
 function distanceM(aLng: number, aLat: number, bLng: number, bLat: number) {
   const R = 6_371_000;
@@ -87,90 +101,121 @@ function distanceM(aLng: number, aLat: number, bLng: number, bLat: number) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+/**
+ * 가까운 역 세 곳.
+ *
+ * 2차까지는 lib/stations.ts에 경의중앙선 9개가 상수로 박혀 있었다.
+ * 경기도 전역으로 넓힌 뒤에도 그대로여서 양평군 밖 필지에는 결과가 비었다 —
+ * 복정역이 코앞인 성남 필지가 '역 정보가 없습니다'로 나왔다.
+ *
+ * 이제 station 테이블에서 읽는다(etl/fetch_stations.py가 채운다).
+ * 위도로 먼저 잘라 후보를 줄인 뒤 거리를 잰다. 경도는 자르지 않는다 —
+ * 위도에 따라 경도 1도의 길이가 달라져 상수 하나로 자를 수 없고,
+ * 위도 한 겹만 잘라도 700행이 수십 행으로 줄어든다.
+ *
+ * 거리 계산을 SQL이 아니라 앱에서 하는 이유: SQLite에는 삼각함수가 있지만
+ * 컬럼 계산이라 인덱스를 못 타고, 어차피 후보가 수십 행이라 차이가 없다.
+ */
+async function nearbyStations(lng: number, lat: number) {
+  // 위도 1도 ≈ 111km. 15km는 약 0.135도다
+  const dLat = STATION_MAX_M / 111_000;
+
+  const rows = await query<{
+    name: string;
+    line: string | null;
+    lng: number;
+    lat: number;
+  }>(
+    "SELECT name, line, lng, lat FROM station WHERE lat BETWEEN ? AND ?",
+    [lat - dLat, lat + dLat],
+  );
+
+  return rows
+    .map((s) => ({
+      name: s.name,
+      // 노선명이 없는 역도 버리지 않는다. 이름과 거리만으로도 쓸모가 있다
+      line: s.line ?? "",
+      distance_m: Math.round(distanceM(lng, lat, s.lng, s.lat)),
+    }))
+    .filter((s) => s.distance_m <= STATION_MAX_M)
+    .sort((a, b) => a.distance_m - b.distance_m)
+    .slice(0, 3);
+}
+
 /** `[[2026,10800], ...]` -> `[{year, price_per_sqm}, ...]` */
-function parseHistory(raw: string | null) {
+function parseHistory(raw: [number, number | null][] | undefined) {
   if (!raw) return [];
-  try {
-    const arr = JSON.parse(raw) as [number, number | null][];
-    return arr
-      .filter((p) => Array.isArray(p) && p.length >= 1)
-      .map(([year, price]) => ({ year, price_per_sqm: price ?? null }))
-      .sort((a, b) => a.year - b.year);
-  } catch {
-    return [];
-  }
+  return raw
+    .filter((p) => Array.isArray(p) && p.length >= 1)
+    .map(([year, price]) => ({ year, price_per_sqm: price ?? null }))
+    .sort((a, b) => a.year - b.year);
 }
 
 /**
  * 필지 한 건을 읍면 실거래 집계와 함께 읽는다.
  *
- * 실거래는 지번이 마스킹되어 제공되므로 필지 단위 매칭이 불가능하다.
- * 반드시 읍면 단위 집계로만 붙인다.
+ * 필지는 DB가 아니라 미리 구워둔 파일에서 온다 — 경로가 PNU에서 그대로
+ * 계산되므로 색인을 거치지 않는다 (etl/build_details.py 참고).
+ *   PNU 4111112900 1 0100 0001  ->  details/4111112900/1.json.gz
+ *          └법정동┘  └본번┘         └ 디렉토리 ┘ └ 본번 끝자리
+ *
+ * 실거래 집계는 DB에 남는다. 필지가 아니라 지역 단위라 행이 몇천 개뿐이고,
+ * 갱신 주기도 공시지가(연 1회)와 달라 파일에 함께 굽지 않는 편이 낫다.
+ * 지번이 마스킹되어 제공되므로 반드시 읍면 단위로만 붙인다.
  */
 export async function getParcel(pnu: string): Promise<Parcel | null> {
   if (!isValidPnu(pnu)) return null;
 
-  const rows = await query<Row>(
-    `SELECT p.pnu, p.sido, p.sigungu, p.emd, p.ri, p.jibun, p.jimok,
-            p.area_sqm, p.price_per_sqm, p.price_year,
-            p.lng, p.lat,
-            p.geojson AS geometry,
-            p.price_history,
-            t.deal_count, t.avg_price_per_sqm, t.median_price_per_sqm,
-            t.from_ym, t.to_ym
-       FROM parcel p
-       -- 읍면동 이름은 시군구를 넘으면 유일하지 않다. 코드까지 맞춰야
-       -- 다른 시의 거래가 이 필지의 지역 시세로 붙는 사고를 막는다
-       LEFT JOIN emd_trade_avg t
-              ON t.sigungu_cd = p.sigungu_cd AND t.emd = p.emd
-      WHERE p.pnu = ?`,
-    [pnu],
+  const file = await readAssetJson<DetailFile>(
+    `details/${pnu.slice(0, 10)}/${pnu[14]}.json.gz`,
   );
+  const p = file?.parcels?.[pnu.slice(10)];
+  if (!file || !p) return null;
 
-  const r = rows[0];
-  if (!r) return null;
+  const trade = await query<TradeRow>(
+    // 읍면동 이름은 시군구를 넘으면 유일하지 않다. 코드까지 맞춰야
+    // 다른 시의 거래가 이 필지의 지역 시세로 붙는 사고를 막는다
+    `SELECT deal_count, avg_price_per_sqm, median_price_per_sqm, from_ym, to_ym
+       FROM emd_trade_avg
+      WHERE sigungu_cd = ? AND emd = ?`,
+    [file.sigungu_cd, file.emd],
+  );
+  const t = trade[0];
 
-  const nearby_stations = STATIONS.map((s) => ({
-    name: s.name,
-    line: s.line,
-    distance_m: Math.round(distanceM(r.lng, r.lat, s.lng, s.lat)),
-  }))
-    .filter((s) => s.distance_m <= STATION_MAX_M)
-    .sort((a, b) => a.distance_m - b.distance_m)
-    .slice(0, 3);
+  const nearby_stations = await nearbyStations(p.lng, p.lat);
 
   const total_price =
-    r.area_sqm !== null && r.price_per_sqm !== null
-      ? Math.round(r.area_sqm * r.price_per_sqm)
+    p.area_sqm !== null && p.price_per_sqm !== null
+      ? Math.round(p.area_sqm * p.price_per_sqm)
       : null;
 
   return {
-    pnu: r.pnu,
-    sido: r.sido,
-    sigungu: r.sigungu,
-    emd: r.emd,
-    ri: r.ri,
-    jibun: r.jibun,
-    jimok: r.jimok,
-    area_sqm: r.area_sqm,
-    price_per_sqm: r.price_per_sqm,
-    price_year: r.price_year,
+    pnu,
+    sido: file.sido,
+    sigungu: file.sigungu,
+    emd: file.emd,
+    ri: file.ri,
+    jibun: p.jibun,
+    jimok: p.jimok,
+    area_sqm: p.area_sqm,
+    price_per_sqm: p.price_per_sqm,
+    price_year: p.price_year,
     total_price,
-    lng: r.lng,
-    lat: r.lat,
-    geometry: JSON.parse(r.geometry),
-    price_history: parseHistory(r.price_history),
+    lng: p.lng,
+    lat: p.lat,
+    geometry: p.geometry,
+    price_history: parseHistory(p.price_history),
     nearby_stations,
     emd_trade_avg:
-      r.deal_count === null
+      !t || t.deal_count === null
         ? null
         : {
-            emd: r.emd,
-            deal_count: r.deal_count,
-            avg_price_per_sqm: r.avg_price_per_sqm,
-            median_price_per_sqm: r.median_price_per_sqm,
-            from_ym: r.from_ym,
-            to_ym: r.to_ym,
+            emd: file.emd,
+            deal_count: t.deal_count,
+            avg_price_per_sqm: t.avg_price_per_sqm,
+            median_price_per_sqm: t.median_price_per_sqm,
+            from_ym: t.from_ym,
+            to_ym: t.to_ym,
           },
   };
 }
