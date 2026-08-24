@@ -394,3 +394,36 @@ CREATE TABLE parcel_price_history (
 **DoD**
 - 뉴스가 없거나 API가 실패해도 `주변` 탭의 나머지가 정상이다
 - 뉴스 블록이 역·시설보다 시각적으로 앞서지 않는다
+
+---
+
+## Task 15 — 3차 디자인 (부드러운 UI) · 완료 2026-08-24
+
+**목표**: 직방·다방 수준으로 부드러운 화면. 서체를 바꾸는 것이 출발점이었다.
+
+**왜**: 2차는 의도적으로 딱딱했다(라운드 금지·그림자 금지·숫자는 명조).
+직방·다방·호갱노노가 실제로 로드하는 서체를 확인해 보니 셋 다 **Pretendard**였고,
+서체가 뒤섞인 디스코만 "어렵다"는 평을 듣는다. 방향은 명확했다.
+
+**한 일**
+1. 서체 3종 → **Pretendard Variable 하나**. 명조(`.font-serif-num`)·모노(`.eyebrow`) 삭제.
+   `npm i pretendard` + `copy:fonts`로 자체 호스팅(동적 서브셋)
+2. 토큰 재작성 — 강조색 9단 틴트 사다리(hue 28 고정, 600·700은 2차 값 유지),
+   라운드 5단, 엘리베이션 3단, 타입 스케일 클래스(`.t-amount` 등)
+3. 지도 화면을 **좌측 384px 고정 레일 → 지도 전면 + 떠 있는 카드**로 재구성.
+   반쯤 만들어져 있던 모바일 시트(SNAP) 코드 제거
+4. 줌 컨트롤 우상단 → **우하단**(패널 카드와 겹침), 버튼 29px → 44px
+5. 카드가 필지를 가리는 문제 — `flyTo`에 `padding`, 클릭에 `panBy`(`nudgeIntoView`)
+6. OG 이미지 폰트 조달 교체 (Google Fonts CSS API → 로컬 woff + `readFile`)
+7. `DESIGN.md` 3차 재작성, 2차는 `DESIGN-v2.md`로 보존,
+   `design/design-system-v3.html` 신규, 나머지 시안은 2차 아카이브로 표시
+
+**걸렸던 것**
+- `fetch(new URL(…, import.meta.url))`은 Turbopack에서 `file:` URL로 풀려 실패한다.
+  "No fonts are loaded"로 빌드가 죽는다 — `readFile(join(process.cwd(), "assets/…"))`를 쓴다
+- `--accent-50/100`을 `0.012 / 0.024`로 뒀더니 웜 뉴트럴 바탕 위에서 분홍으로 읽혔다.
+  `0.007 / 0.016`으로 내렸다
+- `components/ParcelMap 2.tsx`(Finder 중복본)가 양평 시절 상수를 참조해 타입 체크를 깨고 있었다. 삭제
+
+**남은 것**
+- 모바일 하단 시트 — 다음 Task. 이번에는 데스크톱만 확정했다

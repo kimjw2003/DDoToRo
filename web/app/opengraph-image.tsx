@@ -1,4 +1,6 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import { query } from "@/lib/db";
 import { SERVICE_AREA } from "@/lib/region";
@@ -20,33 +22,38 @@ const PAPER = "#F9F8F5";
 const RAMP = ["#FAEEE5", "#F2D2BE", "#E0AC91", "#CA6E5D", "#9A5048"];
 
 /**
- * Google Fonts에서 필요한 글자만 받아 온다.
+ * 서체를 레포 안에서 읽는다.
  *
- * 한글 폰트 전체는 수 MB라 레포에 두기 부담스럽다. CSS API의 `text=`는
- * 넘긴 글자만 담은 서브셋을 주므로 보통 수 KB로 끝난다.
+ * 3차에서 Pretendard 하나로 통일했는데 Pretendard는 Google Fonts에 없다.
+ * 그래서 2차의 CSS API + `text=` 서브셋 방식을 쓸 수 없다.
  *
- * User-Agent를 옛 브라우저로 위장하는 것이 핵심이다. 최신 UA로 요청하면
- * woff2를 돌려주는데 ImageResponse가 쓰는 satori는 woff2를 읽지 못한다.
+ * 또 하나 —
+ * **ImageResponse가 쓰는 satori는 woff2를 읽지 못한다.** 화면용으로 받아 둔
+ * public/fonts의 woff2 청크를 그대로 가져다 쓰면 조용히 실패한다.
+ * app/_fonts에 KS X 1001 서브셋 **woff**를 따로 두는 이유다.
+ * (`_` 로 시작하는 폴더는 Next.js가 라우팅에서 제외한다)
+ *
+ * 읽는 방식은 `readFile(join(process.cwd(), "assets/…"))` 다 — Next 16이 문서화한 형태다.
+ * **경로를 리터럴로 적는다.** 변수로 조립하면 빌드의 파일 추적이 놓쳐
+ * 배포본 함수 번들에 폰트가 빠진다.
+ *
+ * `fetch(new URL(…, import.meta.url))` 은 쓰지 말 것 —
+ * Turbopack 빌드에서 file: URL로 풀려 fetch가 던지고,
+ * 폰트가 0개가 되어 "No fonts are loaded"로 빌드가 죽는다.
  */
-async function loadFont(
-  family: string,
-  weight: number,
-  text: string,
-): Promise<ArrayBuffer | null> {
+async function loadFonts(): Promise<{
+  regular: Buffer | null;
+  bold: Buffer | null;
+}> {
   try {
-    const url =
-      `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}` +
-      `:wght@${weight}&text=${encodeURIComponent(text)}`;
-    const css = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 6.1; rv:1.9)" },
-    }).then((r) => r.text());
-
-    const src = css.match(/src:\s*url\((https:\/\/[^)]+)\)/);
-    if (!src) return null;
-    return await fetch(src[1]).then((r) => r.arrayBuffer());
+    const [regular, bold] = await Promise.all([
+      readFile(join(process.cwd(), "assets/Pretendard-Regular.subset.woff")),
+      readFile(join(process.cwd(), "assets/Pretendard-Bold.subset.woff")),
+    ]);
+    return { regular, bold };
   } catch {
-    // 폰트를 못 받아도 이미지 생성 자체는 실패시키지 않는다
-    return null;
+    // 폰트를 못 읽어도 이미지 생성 자체는 실패시키지 않는다
+    return { regular: null, bold: null };
   }
 }
 
@@ -71,16 +78,22 @@ export default async function Image() {
     ? `필지 ${count}건 · 2026년 공시지가`
     : "2026년 개별공시지가";
 
-  const [hahmlet, plexKr, plexMono] = await Promise.all([
-    loadFont("Hahmlet", 600, title),
-    loadFont("IBM Plex Sans KR", 400, subtitle + lead),
-    loadFont("IBM Plex Mono", 400, footer),
-  ]);
+  const { regular, bold } = await loadFonts();
 
+  // 서체는 하나다. 굵기만 둘 등록한다
   const fonts = [
-    hahmlet && { name: "Hahmlet", data: hahmlet, style: "normal" as const, weight: 600 as const },
-    plexKr && { name: "PlexKR", data: plexKr, style: "normal" as const, weight: 400 as const },
-    plexMono && { name: "PlexMono", data: plexMono, style: "normal" as const, weight: 400 as const },
+    regular && {
+      name: "Pretendard",
+      data: regular,
+      style: "normal" as const,
+      weight: 400 as const,
+    },
+    bold && {
+      name: "Pretendard",
+      data: bold,
+      style: "normal" as const,
+      weight: 700 as const,
+    },
   ].filter((f): f is NonNullable<typeof f> => Boolean(f));
 
   return new ImageResponse(
@@ -95,6 +108,8 @@ export default async function Image() {
           justifyContent: "center",
           padding: "0 88px",
           position: "relative",
+          // 서체는 Pretendard 하나다. 아래 블록들은 굵기·크기만 다르다
+          fontFamily: "Pretendard",
         }}
       >
         {/* 마크 — ㄸ. BrandMark와 같은 좌표이며 형태를 고치지 않는다 */}
@@ -107,10 +122,9 @@ export default async function Image() {
 
         <div
           style={{
-            fontFamily: "Hahmlet",
-            fontSize: 86,
-            fontWeight: 600,
-            letterSpacing: -2,
+            fontSize: 88,
+            fontWeight: 700,
+            letterSpacing: -2.8,
             color: INK,
             lineHeight: 1.1,
           }}
@@ -118,25 +132,19 @@ export default async function Image() {
           {title}
         </div>
 
-        <div style={{ fontFamily: "PlexKR", fontSize: 34, color: "#5F5A52", marginTop: 18 }}>
+        <div style={{ fontSize: 34, color: "#5F5A52", marginTop: 18 }}>
           {subtitle}
         </div>
 
-        <div style={{ fontFamily: "PlexKR", fontSize: 26, color: "#77716A", marginTop: 22 }}>
+        <div style={{ fontSize: 26, color: "#77716A", marginTop: 22 }}>
           {lead}
         </div>
 
-        <div style={{ display: "flex", height: 1, background: "#E4E1DA", marginTop: 36 }} />
-
         <div
-          style={{
-            fontFamily: "PlexMono",
-            fontSize: 22,
-            letterSpacing: 2,
-            color: "#77716A",
-            marginTop: 22,
-          }}
-        >
+          style={{ display: "flex", height: 1, background: "#E4E1DA", marginTop: 36 }}
+        />
+
+        <div style={{ fontSize: 22, color: "#77716A", marginTop: 22 }}>
           {footer}
         </div>
 

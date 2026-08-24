@@ -34,41 +34,17 @@ import {
   MIN_PARCEL_ZOOM,
 } from "@/lib/basemap";
 import { fillColorExpression, hatchImage, RAMP } from "@/lib/priceRamp";
+import { fetchParcelTiles } from "@/lib/tiles";
 
 const SRC = "parcels";
 const DEBOUNCE_MS = 300;
 
-/**
- * 필지 요청 좌표를 맞출 격자 크기(도).
- *
- * bbox를 화면 그대로 보내면 지도를 1픽셀만 움직여도 URL이 달라져 CDN 캐시가
- * 매번 빗나간다. 격자에 맞춰 넓혀 보내면 인접한 화면이 같은 URL을 공유하고,
- * 되돌아오는 이동은 전부 캐시에서 처리된다.
- *
- * 격자를 고정값으로 두면 안 된다. 화면 폭이 z15에서 약 0.06도, z19에서
- * 0.004도라 15배 차이 나기 때문이다 — 고정하면 확대할수록 화면의 몇 배를
- * 받아오게 된다. 줌이 한 단계 오를 때마다 절반으로 줄여 화면 크기를 따라간다.
- */
-function gridFor(zoom: number): number {
-  // z15 화면 폭의 약 1/4. 이보다 잘게 쪼개면 캐시 키가 흩어져 적중률이 떨어진다
-  return 0.016 / 2 ** (Math.floor(zoom) - MIN_PARCEL_ZOOM);
-}
+/*
+  bbox를 격자에 맞춰 보내던 snapBbox는 사라졌다.
 
-/** 격자 바깥으로 넓힌다. 좁히면 화면 가장자리 필지가 빠진다 */
-function snapBbox(
-  b: { minLng: number; minLat: number; maxLng: number; maxLat: number },
-  zoom: number,
-) {
-  const g = gridFor(zoom);
-  // 부동소수점 찌꺼기가 URL에 섞이면 그 자체로 캐시 키가 갈라진다
-  const fix = (v: number) => Number(v.toFixed(5));
-  return {
-    minLng: fix(Math.floor(b.minLng / g) * g),
-    minLat: fix(Math.floor(b.minLat / g) * g),
-    maxLng: fix(Math.ceil(b.maxLng / g) * g),
-    maxLat: fix(Math.ceil(b.maxLat / g) * g),
-  };
-}
+  타일은 주소 자체가 고정 격자라(z/x/y) 지도를 1픽셀 움직여도 같은 파일을
+  가리킨다. 캐시를 맞추려고 좌표를 반올림할 이유가 없어졌다.
+*/
 
 /*
   클릭·호버 대상 레이어.
@@ -204,8 +180,9 @@ function priceChip(opts: {
   const { name, perSqm, deals, step, large = false } = opts;
 
   const el = document.createElement("div");
+  // overflow-hidden이 있어야 왼쪽 색 띠가 라운드에 맞게 잘린다
   el.className =
-    "flex items-stretch overflow-hidden border border-[var(--line-strong)] bg-[var(--surface)]";
+    "flex items-stretch overflow-hidden rounded-[var(--r-md)] bg-[var(--surface)] shadow-e1";
 
   // 가격 단계를 색 띠로. 값을 읽기 전에 어느 정도인지 먼저 보인다
   const bar = document.createElement("div");
@@ -234,7 +211,7 @@ function priceChip(opts: {
     시군구는 '지번'과 같은 22px, 읍면동은 한 단 아래 17px로 둔다.
   */
   const value = document.createElement("span");
-  value.className = `tnum font-serif-num leading-[1.15] text-[var(--ink)] ${
+  value.className = `tnum font-bold leading-[1.15] tracking-[-0.02em] text-[var(--ink)] ${
     large ? "text-[22px]" : "text-[17px]"
   }`;
   value.textContent = pyeongMan(perSqm);
@@ -246,6 +223,41 @@ function priceChip(opts: {
   body.append(head, priceRow);
   el.append(bar, body);
   return el;
+}
+
+/*
+  떠 있는 카드가 가리는 좌우 폭.
+
+  3차에서 지도가 화면 전면을 차지하고 검색·패널이 그 위에 뜬다(MapView).
+  값은 MapView의 카드 폭·여백과 짝이므로 한쪽만 고치지 말 것.
+    좌: left-4(16) + 360 = 376
+    우: right-4(16) + 400 = 416
+*/
+const SEARCH_ZONE = 376;
+const PANEL_ZONE = 416;
+/** 카드 가장자리에 딱 붙지 않도록 남기는 여유 */
+const NUDGE_GAP = 48;
+
+/**
+ * 선택한 필지가 카드 밑에 깔리면 지도를 밀어 꺼내 온다.
+ *
+ * 클릭 자체는 카드 바깥에서 일어나므로 문제가 없지만, 우측 패널은 클릭 **뒤에** 뜬다.
+ * 오른쪽 끝을 누르면 방금 고른 필지가 곧바로 패널에 덮인다.
+ * panBy는 양수 x가 카메라를 오른쪽으로 옮기므로 화면 위 필지는 왼쪽으로 이동한다.
+ */
+function nudgeIntoView(m: MapLibreMap, screenX: number) {
+  const w = m.getCanvas().clientWidth;
+  const rightEdge = w - PANEL_ZONE - NUDGE_GAP;
+  const leftEdge = SEARCH_ZONE + NUDGE_GAP;
+
+  const dx =
+    screenX > rightEdge
+      ? screenX - rightEdge
+      : screenX < leftEdge
+        ? screenX - leftEdge
+        : 0;
+
+  if (dx !== 0) m.panBy([dx, 0], { duration: 300 });
 }
 
 export default function ParcelMap({
@@ -295,7 +307,12 @@ export default function ParcelMap({
       (window as unknown as { __map?: MapLibreMap }).__map = m;
     }
 
-    m.addControl(new NavigationControl({ showCompass: false }), "top-right");
+    /*
+      줌 컨트롤은 우하단이다.
+      3차에서 패널이 우상단에 떠 있는 카드가 되었으므로 top-right는 정면으로 겹친다.
+      버튼 크기(29px -> 44px)는 globals.css의 .maplibregl-ctrl-group에서 키운다.
+    */
+    m.addControl(new NavigationControl({ showCompass: false }), "bottom-right");
 
     m.on("load", () => {
       m.addSource(SRC, {
@@ -421,7 +438,9 @@ export default function ParcelMap({
     m.on("click", PICK_LAYERS, (e: MapLayerMouseEvent) => {
       const f = e.features?.[0];
       const pnu = f?.properties?.pnu as string | undefined;
-      if (pnu) onSelect(pnu);
+      if (!pnu) return;
+      onSelect(pnu);
+      nudgeIntoView(m, e.point.x);
     });
 
     // 빈 곳을 누르면 선택을 푼다
@@ -546,16 +565,6 @@ export default function ParcelMap({
     }
 
     const b = m.getBounds();
-    const s = snapBbox(
-      {
-        minLng: b.getWest(),
-        minLat: b.getSouth(),
-        maxLng: b.getEast(),
-        maxLat: b.getNorth(),
-      },
-      zoom,
-    );
-    const bbox = [s.minLng, s.minLat, s.maxLng, s.maxLat].join(",");
 
     // 이동이 빠르면 이전 요청이 늦게 도착해 화면을 덮어쓴다. 직전 요청을 취소한다
     abort.current?.abort();
@@ -564,17 +573,21 @@ export default function ParcelMap({
 
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/parcels?bbox=${bbox}&zoom=${Math.floor(zoom)}`,
-        { signal: ac.signal },
+      const { collection, truncated } = await fetchParcelTiles(
+        {
+          minLng: b.getWest(),
+          minLat: b.getSouth(),
+          maxLng: b.getEast(),
+          maxLat: b.getNorth(),
+        },
+        zoom,
+        ac.signal,
       );
-      if (!res.ok) throw new Error(String(res.status));
-      const json = await res.json();
 
-      setTooFar(Boolean(json.too_far));
-      setTruncated(Boolean(json.truncated));
+      setTooFar(false);
+      setTruncated(truncated);
       setFailed(false);
-      src.setData(json);
+      src.setData(collection);
 
       // 데이터가 새로 들어오면 feature-state가 초기화되므로 선택 표시를 다시 건다
       if (selectedRef.current) {
@@ -614,6 +627,11 @@ export default function ParcelMap({
       center: [flyTo.lng, flyTo.lat],
       zoom: Math.max(map.current.getZoom(), 17),
       duration: 800,
+      /*
+        떠 있는 카드가 가리는 만큼 안쪽으로 밀어 준다.
+        padding이 없으면 검색 결과로 이동한 필지가 우측 패널 카드 밑에 정확히 깔린다.
+      */
+      padding: { left: SEARCH_ZONE, right: PANEL_ZONE, top: 0, bottom: 0 },
     });
   }, [flyTo]);
 
@@ -626,16 +644,20 @@ export default function ParcelMap({
         안내 문구는 띄우지 않는다. 지도를 덮는 배너가 거슬린다는 판단이다.
       */}
 
+      {/*
+        지도 위 토스트는 전부 pill이다. 테두리를 쓰지 않고 그림자로 띄운다.
+        위치는 상단 중앙 — 좌상단 검색 카드와 우상단 패널 카드 사이다.
+      */}
       {failed && (
         <div className="absolute left-1/2 top-4 -translate-x-1/2">
-          <div className="flex items-center gap-3 rounded border border-[var(--line)] bg-[var(--surface)] px-4 py-2.5">
-            <span className="text-[14px] text-[var(--ink-mid)]">
+          <div className="flex items-center gap-3 rounded-[var(--r-full)] bg-[var(--surface)] py-1.5 pl-5 pr-1.5 shadow-e2">
+            <span className="t-label text-[var(--ink-mid)]">
               필지 정보를 불러오지 못했습니다
             </span>
             <button
               type="button"
               onClick={() => map.current && load(map.current)}
-              className="min-h-[36px] rounded border border-[var(--ink)] px-3 text-[14px] text-[var(--ink)]"
+              className="btn btn-primary min-h-[36px] rounded-[var(--r-full)] px-4 text-[14px]"
             >
               다시 시도
             </button>
@@ -645,15 +667,15 @@ export default function ParcelMap({
 
       {truncated && !tooFar && (
         <div className="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2">
-          <p className="rounded border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-[14px] text-[var(--ink-mid)]">
+          <p className="t-label rounded-[var(--r-full)] bg-[var(--surface)] px-5 py-2 text-[var(--ink-mid)] shadow-e2">
             필지가 많아 일부만 표시됩니다. 더 확대해 주세요
           </p>
         </div>
       )}
 
       {loading && !tooFar && (
-        <div className="pointer-events-none absolute right-4 top-4">
-          <span className="rounded bg-[var(--surface)] px-2.5 py-1 text-[14px] text-[var(--ink-soft)]">
+        <div className="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2">
+          <span className="t-label rounded-[var(--r-full)] bg-[var(--surface)] px-5 py-2 text-[var(--ink-soft)] shadow-e2">
             불러오는 중
           </span>
         </div>

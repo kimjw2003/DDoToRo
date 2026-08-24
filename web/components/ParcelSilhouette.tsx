@@ -75,8 +75,8 @@ export default function ParcelSilhouette({
       <path
         d={d}
         fill={priceColor(pricePerSqm)}
-        stroke="#1C1C1A"
-        strokeWidth={1}
+        stroke="var(--ink)"
+        strokeWidth={1.25}
         strokeLinejoin="round"
       />
     </svg>

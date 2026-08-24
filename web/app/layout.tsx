@@ -18,27 +18,27 @@ export default function RootLayout({
     <html lang="ko" className="h-full">
       <head>
         {/*
-          서체는 여기서 <link>로 불러온다.
+          서체는 Pretendard Variable 하나다. 여기서 <link>로 불러온다 —
           globals.css에서 @import 하면 Tailwind가 전개한 규칙 뒤로 밀려 CSS 스펙 위반이 된다.
 
-          Hahmlet          표제·지번·금액 (명조)
-          IBM Plex Sans KR 본문·라벨·버튼
-          IBM Plex Mono    고유번호·배지·아이브로
+          파일은 node_modules/pretendard에서 public/fonts/로 복사된다
+          (package.json의 copy:fonts, predev/prebuild가 실행). 외부 CDN을 타지 않는다.
+
+          동적 서브셋인 것이 핵심이다. 92개 @font-face가 unicode-range로 쪼개져 있어
+          브라우저가 화면에 실제로 뜬 글자의 청크만 받는다. 디스크에는 3.1MB가 있지만
+          한 페이지 전송량은 보통 40~80KB다. 통짜 variable(woff2 1.1MB)로 바꾸지 말 것.
         */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin=""
-        />
         {/*
-          no-page-custom-font 규칙은 Pages Router의 개별 페이지를 전제로 한다.
-          App Router의 root layout은 모든 페이지에 적용되므로 여기서는 해당하지 않는다.
+          no-css-tags는 "번들러에 맡겨라"는 규칙이지만 여기서는 맞지 않는다.
+          이 CSS는 92개 @font-face를 unicode-range로 쪼갠 서브셋 매니페스트라
+          globals.css에서 @import 하면 Tailwind가 전개한 규칙 뒤로 밀려
+          CSS 스펙 위반이 되고, 발견 시점도 한 왕복 늦어진다.
+          <head>의 <link>여야 브라우저가 즉시 폰트를 찾아 나선다.
         */}
-        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        {/* eslint-disable-next-line @next/next/no-css-tags */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
           rel="stylesheet"
+          href="/fonts/pretendard/pretendardvariable-dynamic-subset.css"
         />
       </head>
       <body className="min-h-full">{children}</body>

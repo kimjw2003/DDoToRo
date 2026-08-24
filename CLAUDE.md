@@ -73,22 +73,38 @@ Task 1에서 이걸 먼저 확인한다. 확인 전에 조인 로직을 작성�
 
 ### 실거래가 API
 ```
-GET http://apis.data.go.kr/1613000/RTMSDataSvcLandTrade/getRTMSDataSvcLandTrade
+GET https://apis.data.go.kr/1613000/RTMSDataSvcLandTrade/getRTMSDataSvcLandTrade
   serviceKey  발급키 (Decoding 키 사용)
   LAWD_CD     법정동코드 앞 5자리 (시군구 단위. 양평군 = 41830)
   DEAL_YMD    계약년월 6자리 (예: 202505)
 ```
 군 단위 지역은 거래가 드물어 특정 월 0건이 정상이다. 에러로 처리하지 말 것.
 
+**반드시 https로 부른다.** 같은 엔드포인트인데 http는 응답이 25초씩 걸려
+30초 타임아웃에 간헐적으로 걸린다 (2026-08-07 실측: http 25.0s vs https 0.06s).
+
 **LAWD_CD는 자치구 단위다.** 수원시는 41110이 아니라 41111(장안구)처럼 구별로
 조회한다. 그래서 경기도 대상은 시군구 31개가 아니라 **47개**다.
 원본 SHP의 A15 컬럼은 수원시 4개 구를 모두 41110으로 넣어두어 쓸 수 없다 —
 시군구코드는 반드시 **PNU 앞 5자리**에서 얻는다.
 
-**호출량과 계정.** 47개 × 36개월 = 1,692회가 필요한데 개발계정은 1,000회/일이다.
-`fetch_trades.py`는 수집 이력(`trade_fetch_log`)을 남겨 다음 날 이어받고,
-한도 초과 코드(22)를 만나면 예외 대신 그때까지 받은 것을 남기고 멈춘다.
-운영계정은 100,000회/일이며 **무료**다(활용사례 등록 후 신청). 신청하면 한 번에 끝난다.
+**호출량과 계정.** 2026-08-07에 운영계정(100,000회/일)이 승인되어 한도는 더 이상
+제약이 아니다. 전국으로 넓혀도 시군구 약 250개 × 36개월 ≈ 9,000회라 하루에 끝난다.
+`fetch_trades.py`는 그래도 수집 이력(`trade_fetch_log`)을 남겨 이어받고, 한도 초과
+코드(22)를 만나면 예외 대신 그때까지 받은 것을 남기고 멈춘다 — 그대로 둘 것.
+
+**실거래는 한 번 받고 끝나는 데이터가 아니다.** 신고 기한이 계약 후 30일이라
+최근 1~2개월치가 나중에 더 채워진다. 주기적으로 최근 몇 달을 다시 받는다:
+
+```
+python fetch_trades.py --refetch --months 3      # 47 × 3 = 141회
+python export_sqlite.py --trades-only            # 실거래 표만 갱신 (1초)
+node push_turso.mjs --local=file:<경로>/ddotoro-small.db \
+     --replace=emd_trade_avg,sigungu_trade_avg   # 운영 반영
+```
+
+`--refetch`는 (시군구, 월) 단위로 지우고 다시 넣으므로 중복이 생기지 않는다.
+공시지가는 연 1회라 이때 521만 필지를 다시 내보낼 필요가 없다.
 
 ---
 
@@ -134,20 +150,36 @@ docker-compose.yml
 ## 디자인
 
 화면 작업 시 `DESIGN.md`를 반드시 먼저 읽는다. 색·서체·간격은 거기 정한 것만 쓴다.
-1차 지침 `DESIGN-v1.md`는 참고용이며 기준이 아니다.
+값이 문서와 코드에서 다르면 **`web/app/globals.css`가 맞다.**
 
-동작하는 시안이 `design/` 폴더에 있다 — **정답지로 읽되 코드를 복사하지 않는다.**
-바닐라 JS + 인라인 스타일이고 지적도도 시안 데이터라 그대로 옮기면 레포가 망가진다.
-구조·수치·문구만 옮기고 React + Tailwind로 다시 쓴다.
+**현재 기준은 3차다** (2026-08-24). 2차에서 서체·형태·레이아웃이 통째로 바뀌었다.
+
+| | 2차 | 3차 |
+|---|---|---|
+| 서체 | Hahmlet + IBM Plex Sans KR + Mono | **Pretendard Variable 하나** |
+| 형태 | 라운드·그림자 금지 | **라운드 5단 + 엘리베이션 3단** |
+| 지도 화면 | 좌측 384px 고정 레일 | **지도 전면 + 떠 있는 카드** |
+
+`DESIGN-v2.md` / `DESIGN-v1.md`는 기록이며 **기준이 아니다.**
 
 | 작업 | 볼 파일 |
 |---|---|
-| 지도 · 상세 패널 | `design/map-desktop.html` |
-| 단독 페이지 | `design/land-detail-page.html` |
-| 색 · 서체 확인 | `design/design-system.html` |
-| 왜 그렇게 정했는지 | `design/index.html` |
+| 색 · 서체 · 컴포넌트 | `design/design-system-v3.html` |
+| 구현체(값의 출처) | `web/app/globals.css` |
 
-2차 작업은 `TASKS.md`의 Task 7~14다. **한 세션에 한 Task씩만** 진행한다.
+`design/`의 나머지 시안(`map-desktop.html`, `land-detail-page.html`, `design-system.html`)은
+**2차 아카이브다. 보고 구현하지 말 것** — 서체도 레이아웃도 지금 화면과 다르다.
+
+### 서체를 바꿀 때 걸리는 것 셋
+
+- Pretendard는 Google Fonts에 없다. `npm i pretendard` → `copy:fonts`가 `public/fonts/`로 복사한다
+  (`copy:maplibre`와 같은 패턴, `predev`/`prebuild`가 실행). `public/fonts/`는 gitignore 대상이다
+- **동적 서브셋을 통짜 파일로 바꾸지 말 것.** 92개 `@font-face`가 `unicode-range`로 쪼개져 있어
+  한 페이지 전송량이 40~80KB로 끝난다. 통짜 variable은 woff2만 1.1MB다
+- **OG 이미지는 별도 경로다.** satori가 woff2를 못 읽어 `web/assets/*.subset.woff`를 커밋해 두고
+  `readFile(join(process.cwd(), "assets/…"))`로 읽는다. 경로를 리터럴로 적어야 빌드가 추적한다
+
+2차 작업은 `TASKS.md`의 Task 7~14, 3차는 Task 15다. **한 세션에 한 Task씩만** 진행한다.
 
 ---
 
@@ -181,3 +213,6 @@ docker-compose.yml
 - ETL의 대상 시군구는 인자로 받는다. 상수로 두지 않는다
 - 읍면동을 이름만으로 묶거나 조인하지 않는다 — 시군구를 넘으면 이름이 겹친다.
   반드시 `(sigungu_cd, emd)` 쌍을 쓴다
+
+## 유의해야할 점
+- 사용자에게는 존댓말 할것

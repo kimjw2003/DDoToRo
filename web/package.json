@@ -8,14 +8,16 @@
     "start": "next start",
     "lint": "eslint",
     "copy:maplibre": "mkdir -p public/maplibre && cp node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs node_modules/maplibre-gl/dist/maplibre-gl-shared.mjs public/maplibre/",
-    "predev": "npm run copy:maplibre",
-    "prebuild": "npm run copy:maplibre"
+    "copy:fonts": "rm -rf public/fonts/pretendard && mkdir -p public/fonts/pretendard && cp node_modules/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css public/fonts/pretendard/ && cp -R node_modules/pretendard/dist/web/variable/woff2-dynamic-subset public/fonts/pretendard/",
+    "predev": "npm run copy:maplibre && npm run copy:fonts",
+    "prebuild": "npm run copy:maplibre && npm run copy:fonts"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",
     "maplibre-gl": "^6.0.0",
     "next": "16.2.12",
     "pg": "^8.22.0",
+    "pretendard": "^1.3.9",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },

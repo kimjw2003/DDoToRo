@@ -1,54 +1,112 @@
 @import "tailwindcss";
 /*
-  web/app/globals.css 통째 교체본 — DDoToRo 2차 디자인 토큰
+  web/app/globals.css — DDoToRo 3차 디자인 토큰
 
-  폰트는 layout.tsx에서 <link>로 불러온다.
+  서체는 layout.tsx에서 <link>로 불러온다.
   여기서 @import 하면 Tailwind가 전개한 규칙 뒤로 밀려 CSS 스펙 위반이 된다.
-  (1차와 동일한 이유. 폰트만 Pretendard/나눔명조 → Plex Sans KR/Hahmlet으로 바뀐다)
 
-  설계 명제: 이 화면에서 채도는 오직 가격을 뜻한다.
-  UI 크롬·텍스트·아이콘은 무채색이고, 채도가 있는 색은 가격 램프와
-  주 버튼(강조색) 두 곳에만 쓴다. 강조색은 램프 최상단(--p5)과 같은 색족이라
-  화면에 색 이야기가 하나만 존재한다.
-  선택 상태는 색이 아니라 먹선 굵기로 표현한다.
+  ── 3차에서 무엇이 바뀌었나 ─────────────────────────────
+  2차는 의도적으로 딱딱한 시스템이었다 — 라운드 금지, 그림자 금지, 숫자는 명조.
+  공적 장부의 인상을 형태로 전달하려는 설계였다.
+  3차는 직방·다방과 같은 부드러운 화면으로 간다. 셋이 바뀐다.
 
-  ※ 토큰 "이름"은 1차와 동일하게 유지했다. 값만 바뀌므로
-    기존 컴포넌트의 bg-paper / text-ink / border-line 클래스는 그대로 둔다.
-    새로 추가된 것은 --line-strong / --sunken / --accent / --font-mono 넷뿐이다.
+    서체   Hahmlet + IBM Plex Sans KR + IBM Plex Mono  →  Pretendard Variable 하나
+    형태   라운드 금지                                 →  라운드 5단
+    구획   1px 실선                                    →  엘리베이션 3단 + 여백
+
+  ── 그대로 남는 것 ──────────────────────────────────
+  · 설계 명제 1 "채도는 가격만 뜻한다" — 우리가 파는 변수는 가격 하나뿐이다.
+    직방·다방이 색을 여러 개 쓰는 건 카테고리가 여러 개이기 때문이지 부드러워서가 아니다.
+  · 14px 하한 · 44px 클릭 타깃 — 주 사용자가 40~60대다. 직방·다방은 10~13px을 흔히
+    쓰지만 하한을 따라 내리지 않는다.
+  · 가격 램프 --p1~--p5 값 (lib/priceRamp.ts의 PRICE_BREAKS와 짝이다)
+
+  토큰 "이름"은 2차와 최대한 같게 두었다. --accent / --accent-ink는 사다리의
+  600 / 700 별칭으로 남겨 기존 참조가 깨지지 않는다.
 */
 
 :root {
   /* ── 무채색. oklch가 기준값이다. hex로 되돌리지 말 것 ── */
   --ink: oklch(20% 0.018 70);        /* 본문, 제목, 선택 테두리 */
   --ink-mid: oklch(48% 0.012 70);    /* 보조 텍스트, 라벨 */
-  --ink-soft: oklch(56% 0.012 70);   /* 힌트, 단위 — 1차 #9a9a93은 14px에서 대비 부족이라 올렸다 */
+  --ink-soft: oklch(56% 0.012 70);   /* 힌트, 단위 — 14px에서 대비 4.5:1을 넘긴다 */
   --paper: oklch(98% 0.004 95);      /* 화면 배경 */
-  --surface: oklch(100% 0.002 95);   /* 패널 배경 */
-  --line: oklch(90% 0.006 95);       /* 1px 구분선 */
-  --line-strong: oklch(82% 0.008 95);/* 입력 테두리, 경고 박스 */
+  --surface: oklch(100% 0.002 95);   /* 카드 배경 */
+  --line: oklch(90% 0.006 95);       /* 입력 테두리 */
+  --line-soft: oklch(94% 0.005 95);  /* 카드 안 목록 구분선. --line보다 한 단 여리다 */
+  --line-strong: oklch(82% 0.008 95);/* 주의 박스 테두리 */
   --sunken: oklch(96% 0.005 95);     /* 배지 바탕, hover */
+  --overlay: oklch(20% 0.018 70 / 0.06); /* 카드 위 hover */
 
-  /* ── 강조 1색. 화면당 최대 2회 ── */
-  --accent: oklch(52% 0.10 28);      /* 주 버튼 */
-  --accent-ink: oklch(44% 0.11 28);  /* 주 버튼 hover / 1px 하단 입체 */
+  /*
+    ── 강조색 사다리. 색상(hue) 28에 고정한 벽돌 한 색이다 ──
+
+    600·700은 2차의 --accent / --accent-ink 값 그대로다.
+    브랜드 마크 오른쪽 획(#9A5048)·OG 이미지·램프 최상단(--p5)과 같은 색족이어야 하므로
+    이 두 단은 바꾸지 말 것.
+
+    쓰는 규칙:
+      500~700 (채도 높은 단)  주 버튼 · 토글 켜짐 · 선택 상태에만
+      50~200  (채도 낮은 단)  바탕으로 자유롭게. 채도가 거의 없어 가격 신호로 오독되지 않는다
+  */
+  /*
+    50·100은 채도를 낮게 잡는다. 0.012/0.024로 뒀더니 웜 뉴트럴 바탕 위에서
+    벽돌이 아니라 분홍으로 읽혔다. 큰 면적을 칠하는 단이라 눈에 띄게 다르다.
+  */
+  --accent-50: oklch(97.5% 0.007 28);
+  --accent-100: oklch(94% 0.016 28);
+  --accent-200: oklch(88% 0.045 28);
+  --accent-300: oklch(80% 0.070 28);
+  --accent-400: oklch(70% 0.095 28);
+  --accent-500: oklch(60% 0.105 28);
+  --accent-600: oklch(52% 0.100 28);
+  --accent-700: oklch(44% 0.110 28);
+  --accent-800: oklch(36% 0.090 28);
+  --accent-900: oklch(28% 0.065 28);
+
+  --accent: var(--accent-600);
+  --accent-ink: var(--accent-700);
 
   /*
     가격 램프 5단계. 단일 색상 램프이며 무지개 팔레트는 금지한다.
-    1차의 초록 램프를 점토·벽돌로 교체했다 — VWorld Base 타일의 산림 초록과
-    램프가 같은 색상이라 z13~14에서 필지와 지형이 섞였다.
-    구간은 등간격이 아니라 양평군 전체 ㎡당 가격의 분위수 5분할이다.
+    초록이 아니라 점토·벽돌인 이유는 VWorld Base 타일의 산림 초록과 겹치면
+    z13~14에서 필지와 지형이 섞이기 때문이다.
+    구간은 등간격이 아니라 경기도 전체 ㎡당 가격의 분위수 5분할이다(priceRamp.ts).
   */
-  --p1: oklch(95% 0.022 48);   /* ~ 21,300원/㎡ */
-  --p2: oklch(88% 0.055 42);   /* ~ 42,400 */
-  --p3: oklch(78% 0.092 38);   /* ~ 77,100 */
-  --p4: oklch(64% 0.120 32);   /* ~ 156,000 */
-  --p5: oklch(46% 0.110 28);   /* 156,000 ~ */
+  --p1: oklch(95% 0.022 48);
+  --p2: oklch(88% 0.055 42);
+  --p3: oklch(78% 0.092 38);
+  --p4: oklch(64% 0.120 32);
+  --p5: oklch(46% 0.110 28);
   --p-none: oklch(92% 0.004 95); /* 정보 없음 — 45° 사선 해치로 칠한다 */
 
-  /* ── 서체 ── */
-  --font-ui: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-  --font-num: "Hahmlet", "Noto Serif KR", "Apple SD Gothic Neo", serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  /*
+    ── 라운드 ──
+    2차의 "라운드 금지"를 뒤집은 자리다. 값을 임의로 늘리지 말고 이 다섯 단만 쓴다.
+  */
+  --r-xs: 6px;    /* 배지, 인라인 태그 */
+  --r-sm: 10px;   /* 버튼, 입력, 세그먼트 */
+  --r-md: 14px;   /* 지도 위 가격 칩, 범례, 줌 컨트롤 */
+  --r-lg: 18px;   /* 검색 카드, 패널 카드 */
+  --r-full: 999px;/* 토글, pill 토스트 */
+
+  /*
+    ── 엘리베이션 ──
+    순수 검정이 아니라 --ink의 웜 뉴트럴을 쓴다.
+    검정 그림자는 회색으로 떠서 차갑게 읽히고 벽돌 강조색과 어긋난다.
+  */
+  --e1: 0 1px 2px oklch(20% 0.018 70 / 0.05), 0 1px 3px oklch(20% 0.018 70 / 0.06);
+  --e2: 0 2px 4px oklch(20% 0.018 70 / 0.04), 0 4px 12px oklch(20% 0.018 70 / 0.08);
+  --e3: 0 4px 8px oklch(20% 0.018 70 / 0.05), 0 12px 32px oklch(20% 0.018 70 / 0.12);
+
+  /*
+    ── 서체 ──
+    Pretendard 하나다. 명조(--font-num)와 모노(--font-mono)는 3차에서 없앴다.
+    위계는 서체 전환이 아니라 굵기(400/500/600/700)와 크기로만 만든다.
+    고유번호(PNU) 19자리도 모노가 아니라 Pretendard + .tnum으로 조판한다.
+  */
+  --font-ui: "Pretendard Variable", "Pretendard", -apple-system,
+    "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 
 @theme inline {
@@ -58,8 +116,20 @@
   --color-paper: var(--paper);
   --color-surface: var(--surface);
   --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
   --color-line-strong: var(--line-strong);
   --color-sunken: var(--sunken);
+
+  --color-accent-50: var(--accent-50);
+  --color-accent-100: var(--accent-100);
+  --color-accent-200: var(--accent-200);
+  --color-accent-300: var(--accent-300);
+  --color-accent-400: var(--accent-400);
+  --color-accent-500: var(--accent-500);
+  --color-accent-600: var(--accent-600);
+  --color-accent-700: var(--accent-700);
+  --color-accent-800: var(--accent-800);
+  --color-accent-900: var(--accent-900);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
 
@@ -70,9 +140,16 @@
   --color-p5: var(--p5);
   --color-p-none: var(--p-none);
 
+  --radius-xs: var(--r-xs);
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+
+  --shadow-e1: var(--e1);
+  --shadow-e2: var(--e2);
+  --shadow-e3: var(--e3);
+
   --font-ui: var(--font-ui);
-  --font-num: var(--font-num);
-  --font-mono: var(--font-mono);
 }
 
 html,
@@ -87,13 +164,15 @@ body {
   font-size: 16px;
   /* 주 사용자가 40~60대라 본문 행간을 넉넉히 둔다 */
   line-height: 1.7;
+  /* 한글 산스는 자간을 아주 살짝 좁혀야 뭉치지 않는다 */
+  letter-spacing: -0.005em;
   -webkit-font-smoothing: antialiased;
 }
 
 /*
   데스크톱 웹 전용이다. 1280px 미만에서 레이아웃을 줄이지 않고 가로 스크롤한다.
-  좁은 폭에 억지로 맞추면 패널이 눌려 데스크톱도 모바일도 아닌 화면이 된다.
-  모바일은 데스크톱 확정 후 착수한다.
+  1280px에서도 좌측 검색 카드(360) + 우측 패널 카드(400) 사이에 지도가 480px 남는다.
+  모바일 하단 시트는 다음 Task다 — 여기에 @media로 패널을 접는 코드를 넣지 말 것.
 */
 .app-shell {
   min-width: 1280px;
@@ -101,77 +180,237 @@ body {
 }
 
 /*
-  숫자와 지번에만 명조를 쓴다.
-  토지대장·등기부등본 같은 공적 장부가 명조로 인쇄되기 때문이며,
-  공시지가가 시세가 아니라 공적으로 고시된 가격임을 서체로 전달한다.
-  쓰는 곳은 총액, 지번, 상세 페이지 h1 세 군데뿐이다.
+  숫자 자릿수가 흔들리지 않게 한다.
+  서체가 하나여도 이건 필요하다 — 가격이 갱신될 때 자리가 밀리면 눈이 따라가지 못한다.
 */
-.font-serif-num {
-  font-family: var(--font-num);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-
-/* 그 외 숫자는 자릿수가 흔들리지 않게 tabular */
 .tnum {
   font-variant-numeric: tabular-nums;
 }
 
 /*
-  라틴 대문자 아이브로. 자간을 붙이지 않으면 카운터가 붙어 아마추어처럼 보인다.
-  0.06em이 하한이고 여기서는 0.09em을 쓴다.
+  ── 타입 스케일 ─────────────────────────────
+  임의 크기를 만들지 말고 이 클래스들만 쓴다.
+  14px가 하한이다. 유일한 예외는 지도 출처 표기(12px)다.
 */
-.eyebrow {
-  font-family: var(--font-mono);
+
+/* 공시지가 총액. 화면에서 가장 큰 숫자 */
+.t-amount {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 페이지 제목 (/land h1) */
+.t-title {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.028em;
+}
+
+/* 지번 */
+.t-jibun {
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+/* 섹션 제목 */
+.t-section {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+/* 라벨·단위·안내 */
+.t-label {
   font-size: 14px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--ink-mid);
+  line-height: 1.6;
+  letter-spacing: 0;
 }
 
 /*
-  데이터가 아직 없는 항목에 붙인다. 배지 없이 그럴듯한 수치를 노출하지 않는다.
-  예: "표시 예시 · 좌표 연동 전", "외부 API 연동 전"
+  ── 카드 ─────────────────────────────
+  3차의 기본 그릇이다. 지도 위에 떠 있는 것과 문서 안에 놓이는 것 둘 다 이 클래스를 쓴다.
+  테두리 대신 그림자로 바탕에서 떼어 놓는다 — 선을 함께 쓰면 다시 딱딱해진다.
+*/
+.card {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--e2);
+}
+
+/* 지도 위 패널처럼 더 앞에 있어야 하는 것 */
+.card-raised {
+  box-shadow: var(--e3);
+}
+
+/* 범례·칩처럼 작고 얕게 떠 있는 것 */
+.card-flat {
+  border-radius: var(--r-md);
+  box-shadow: var(--e1);
+}
+
+/*
+  ── 버튼 ─────────────────────────────
+  주 버튼은 화면당 하나다. 나머지는 보조 버튼이거나 밑줄 링크다.
+*/
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.btn:hover {
+  background: var(--sunken);
+  border-color: var(--line-strong);
+}
+
+.btn-primary {
+  background: var(--accent-600);
+  border-color: var(--accent-600);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--accent-700);
+  border-color: var(--accent-700);
+}
+
+/* 카드 위에 얹히는 작은 버튼. 테두리 없이 바탕만 */
+.btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  font-weight: 500;
+}
+
+.btn-ghost:hover {
+  background: var(--overlay);
+  border-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition-duration: 0ms;
+  }
+}
+
+/*
+  데이터가 아직 없는 항목·기준연도에 붙인다.
+  배지 없이 그럴듯한 수치를 노출하지 않는다.
+  예: "2026년 공시", "공공데이터 연동 전"
 */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 26px;
-  padding: 0 9px;
-  font-family: var(--font-mono);
+  height: 28px;
+  padding: 0 10px;
   font-size: 14px;
-  letter-spacing: 0.02em;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
   color: var(--ink-mid);
   background: var(--sunken);
-  border: 1px solid var(--line);
+  border-radius: var(--r-xs);
   white-space: nowrap;
+}
+
+/* 기준연도처럼 값의 출처를 말하는 배지는 강조색 저채도 단을 쓴다 */
+.badge-accent {
+  color: var(--accent-800);
+  background: var(--accent-50);
 }
 
 /*
   주의 문구 박스. 경고를 노랑·빨강으로 칠하지 않는다 —
-  테두리 한 단 굵게 + 보조 텍스트 색으로 충분하다.
+  채도가 있는 색은 가격만 뜻한다는 명제가 여전히 유효하다.
+  3차에서는 테두리를 빼고 바탕 한 단으로 구분한다.
 */
 .note {
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
-  padding: 12px 16px;
+  background: var(--sunken);
+  border-radius: var(--r-sm);
+  padding: 14px 16px;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--ink-mid);
 }
 
 /*
-  토글.
+  ── 탭 ─────────────────────────────
+  2차는 아래 2px 먹선이었다. 3차는 pill이다 —
+  선택된 것이 눌린 자리가 아니라 떠 있는 알약으로 보이는 편이 부드럽다.
+*/
+.tabs {
+  display: grid;
+  gap: 4px;
+  padding: 4px;
+  background: var(--sunken);
+  border-radius: var(--r-sm);
+}
 
-  켜짐은 강조색(--accent)으로 채운다. 주 버튼과 같은 색이며 램프 최상단과 같은
-  색족이라 화면의 색 이야기는 여전히 하나다.
-  이 시스템에서 둥근 형태를 쓰는 유일한 요소다 — 손으로 미는 물리 스위치의 관용
-  형태이고, 각진 요소들 사이에서 "이건 눌러 바꾸는 것"이라는 신호가 된다.
+.tab {
+  min-height: 40px;
+  padding: 0 8px;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--ink-mid);
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
 
-  값은 design/assets/tokens.css를 그대로 옮긴 것이다. 다시 정하지 말 것.
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: var(--e1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab {
+    transition-duration: 0ms;
+  }
+}
+
+/*
+  ── 토글 ─────────────────────────────
+
+  레이어 표시처럼 즉시 적용되는 켬/끔에만 쓴다.
+  확인 버튼을 눌러야 반영되는 설정은 체크박스다 — 토글은 손을 떼는 순간 적용된다는 약속이다.
+
+  켜짐은 강조색으로 채운다. 주 버튼과 같은 색이며 램프 최상단과 같은 색족이라
+  화면의 색 이야기는 여전히 하나다. 초록·파랑처럼 시스템 밖의 색은 쓰지 않는다 —
+  사용자가 가격 신호로 오독한다.
 */
 .switch {
   appearance: none;
@@ -181,11 +420,13 @@ body {
   width: 52px;
   height: 30px;
   margin: 0;
-  background: var(--surface);
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
   cursor: pointer;
-  transition: background 140ms ease, border-color 140ms ease;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
 }
 
 .switch::after {
@@ -195,28 +436,31 @@ body {
   left: 2px;
   width: 24px;
   height: 24px;
-  background: var(--ink-mid);
+  background: var(--surface);
   border-radius: 50%;
-  transition: transform 140ms ease, background 140ms ease;
+  box-shadow: var(--e1);
+  transition:
+    transform 140ms ease,
+    background 140ms ease;
 }
 
 .switch:hover {
-  border-color: var(--ink);
+  border-color: var(--line-strong);
 }
 
 .switch:checked {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--accent-600);
+  border-color: var(--accent-600);
 }
 
 .switch:checked:hover {
-  background: var(--accent-ink);
-  border-color: var(--accent-ink);
+  background: var(--accent-700);
+  border-color: var(--accent-700);
 }
 
 .switch:checked::after {
   transform: translateX(22px);
-  background: var(--surface);
+  background: #fff;
 }
 
 .switch:disabled {
@@ -227,6 +471,7 @@ body {
 
 .switch:disabled::after {
   background: var(--line);
+  box-shadow: none;
 }
 
 /*
@@ -295,41 +540,44 @@ body {
 
 /*
   2분할 세그먼트.
-
   값이 둘 다 이름을 가질 때 쓴다 (평 / ㎡).
-  버튼 계열이라 각진 채로 둔다 — 라운드는 토글에만 허용된 예외다.
+  양쪽이 모두 이름을 가진 값이면 토글이 아니라 세그먼트다 —
+  토글은 "끔"이 무엇인지 라벨 하나로 유추해야 하므로 켬·끔이 명확한 경우에만 쓴다.
 */
 .seg {
   display: inline-flex;
-  border: 1px solid var(--line-strong);
+  gap: 4px;
+  padding: 4px;
+  background: var(--sunken);
+  border-radius: var(--r-sm);
 }
 
 .seg-btn {
-  min-height: 44px;
-  padding: 0 20px;
+  min-height: 40px;
+  padding: 0 18px;
   font-family: var(--font-ui);
   font-size: 16px;
   font-weight: 500;
+  letter-spacing: -0.005em;
   color: var(--ink-mid);
-  background: var(--surface);
+  background: transparent;
   border: 0;
+  border-radius: var(--r-xs);
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
-}
-
-.seg-btn + .seg-btn {
-  border-left: 1px solid var(--line-strong);
+  transition:
+    background 120ms ease,
+    color 120ms ease;
 }
 
 .seg-btn:hover {
-  background: var(--sunken);
   color: var(--ink);
 }
 
-/* 선택은 색이 아니라 먹/바탕을 뒤집어 표시한다 */
 .seg-btn[aria-pressed="true"] {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: var(--e1);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -344,29 +592,33 @@ body {
   앱 화면이 아니라 공개 문서에 가깝다.
 */
 .doc {
-  max-width: 728px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 32px 24px 40px;
+  padding: 28px 24px 48px;
 }
 
 .doc-head {
   display: grid;
   grid-template-columns: 104px 1fr;
   gap: 20px;
-  align-items: start;
-  margin: 16px 0 24px;
+  align-items: center;
+  margin: 16px 0 20px;
 }
 
-/* 총액 블록. 위는 먹선, 아래는 실선으로 문서처럼 가둔다 */
+/* 총액 블록. 3차에서는 선으로 가두지 않고 저채도 강조 바탕에 얹는다 */
 .doc-price {
-  border-top: 1px solid var(--ink);
-  border-bottom: 1px solid var(--line);
-  padding: 20px 0;
+  background: var(--accent-50);
+  border-radius: var(--r-lg);
+  padding: 24px 24px 22px;
 }
 
+/* 본문 블록은 카드로 떨어뜨린다. 선 대신 여백과 그림자로 나눈다 */
 .doc-blk {
-  padding: 32px 0;
-  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--e1);
+  padding: 24px;
+  margin-top: 16px;
 }
 
 /*
@@ -395,6 +647,8 @@ body {
 .bars .b {
   width: 72%;
   background: var(--p3);
+  /* 막대 윗변만 둥글린다. 아래까지 굴리면 바닥선이 흔들린다 */
+  border-radius: var(--r-xs) var(--r-xs) 0 0;
 }
 
 .bars .col:last-child .b {
@@ -406,9 +660,8 @@ body {
   color: var(--ink-mid);
   width: 100%;
   text-align: center;
-  border-top: 1px solid var(--line-strong);
+  border-top: 1px solid var(--line);
   padding-top: 6px;
-  letter-spacing: 0.012em;
 }
 
 /*
@@ -419,9 +672,13 @@ body {
   .doc-head {
     grid-template-columns: 1fr;
   }
+
+  .doc-price .t-amount {
+    font-size: 36px;
+  }
 }
 
-/* 인쇄하면 문서 한 장이 된다. 화면용 크롬은 뺀다 */
+/* 인쇄하면 문서 한 장이 된다. 화면용 크롬과 그림자는 뺀다 */
 @media print {
   .no-print {
     display: none !important;
@@ -436,8 +693,13 @@ body {
     padding: 0;
   }
 
-  .doc-blk {
-    padding: 18px 0;
+  .doc-blk,
+  .doc-price {
+    box-shadow: none;
+    background: #fff;
+    border: 1px solid var(--line);
+    padding: 16px 18px;
+    margin-top: 12px;
     break-inside: avoid;
   }
 }
@@ -457,30 +719,91 @@ body {
   outline-offset: 2px;
 }
 
-/* 애니메이션은 패널 페이드인 · 주 버튼 1px 눌림 · 토스트 페이드 셋만 허용한다 */
-@keyframes panel-fade-in {
+/*
+  overflow:hidden 안에서는 바깥으로 뻗는 포커스 링이 잘린다.
+  해당 요소는 링을 안으로 그린다.
+
+  줌 컨트롤과 지도 캔버스가 여기 걸린다 —
+  ctrl-group은 라운드에 맞춰 버튼을 자르려고 overflow:hidden을 걸었고,
+  캔버스는 .app-shell(overflow:hidden)을 정확히 가득 채운다.
+  둘 다 기본 offset(+2px)이면 링이 통째로 잘려 Tab 위치가 보이지 않는다.
+*/
+.card :focus-visible,
+.card-raised :focus-visible,
+.maplibregl-ctrl-group button:focus-visible {
+  outline-offset: -2px;
+}
+
+.maplibregl-canvas:focus-visible {
+  outline-offset: -3px;
+}
+
+/* 애니메이션은 카드 등장 · 버튼 · 토글 노브 · 탭 전환 넷만 허용한다 */
+@keyframes card-in {
   from {
     opacity: 0;
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.panel-fade-in {
-  animation: panel-fade-in 160ms ease-out;
+.card-in {
+  animation: card-in 180ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .panel-fade-in {
+  .card-in {
     animation: none;
   }
 }
 
-/* MapLibre 기본 크롬도 무채색으로 맞춘다 */
+/*
+  ── MapLibre 기본 크롬 ──────────────────────
+  줌 컨트롤은 우하단이다(우상단은 패널 카드와 겹친다).
+  버튼을 29px 기본값에서 44px로 키운다 — 클릭 타깃 하한이다.
+*/
+
+/*
+  패널 카드는 화면 오른쪽 전체 높이를 차지하므로 우하단 컨트롤을 통째로 덮는다.
+  줌도 출처 표기도 손댈 수 없게 되므로 패널이 열린 동안만 왼쪽으로 밀어낸다.
+  값은 MapView가 --map-ctrl-right로 넘긴다(닫히면 0px).
+*/
+.maplibregl-ctrl-bottom-right {
+  /*
+    !important가 없으면 안 먹는다 — maplibre-gl.css는 ParcelMap.tsx에서 import 되어
+    번들에서 이 파일보다 뒤에 오고, 같은 명시도의 right: 0 이 이긴다.
+    이 파일의 다른 MapLibre 재정의도 같은 이유로 !important를 달고 있다.
+  */
+  right: var(--map-ctrl-right, 0px) !important;
+  transition: right 180ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .maplibregl-ctrl-bottom-right {
+    transition-duration: 0ms;
+  }
+}
 .maplibregl-ctrl-group {
-  border: 1px solid var(--line) !important;
-  box-shadow: none !important;
+  border: 0 !important;
+  border-radius: var(--r-md) !important;
+  box-shadow: var(--e2) !important;
+  overflow: hidden;
+}
+
+.maplibregl-ctrl-group button {
+  width: 44px !important;
+  height: 44px !important;
+}
+
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--line-soft) !important;
+}
+
+.maplibregl-ctrl-attrib.maplibregl-compact {
+  border-radius: var(--r-full) !important;
 }
 
 /*

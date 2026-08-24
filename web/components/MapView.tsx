@@ -8,13 +8,28 @@ import ParcelMap, { type ChipLevel } from "@/components/ParcelMap";
 import ParcelPanel, { type ParcelDetail } from "@/components/ParcelPanel";
 import Legend from "@/components/Legend";
 import SearchBox, { type SearchHit } from "@/components/SearchBox";
-import { formatWon } from "@/lib/format";
 import { SERVICE_AREA } from "@/lib/region";
 
-/** 모바일 하단 시트 스냅 3단계. 필지를 누르면 중간으로 열린다 */
-const SNAP = { collapsed: "88px", middle: "45vh", expanded: "85vh" } as const;
-type Snap = keyof typeof SNAP;
+/**
+ * 패널 카드 폭.
+ *
+ * Tailwind 클래스(w-[400px])와 우하단 컨트롤을 밀어낼 거리가 같은 값을 써야 하므로
+ * 여기 한 번만 적는다. ParcelMap의 PANEL_ZONE(= 이 값 + 여백 16)과도 짝이다.
+ */
+const PANEL_CARD_W = 400;
 
+/**
+ * 지도 화면.
+ *
+ * 3차에서 좌측 384px 고정 레일을 걷어내고 지도를 전면으로 깔았다.
+ * 검색·패널·범례는 그 위에 떠 있는 카드다 (직방·다방·호갱노노와 같은 구성).
+ *
+ * 카드가 지도를 가리므로 그 아래 필지는 클릭할 수 없다.
+ * ParcelMap이 flyTo에 padding을 넘겨 선택 필지를 가시 영역 중앙에 놓는 것으로 해결한다.
+ *
+ * 모바일 하단 시트는 이번 범위가 아니다. 2차에서 반쯤 만들어져 있던 SNAP 코드는 걷어냈다 —
+ * 여기에 @media로 패널을 접는 코드를 다시 넣지 말 것.
+ */
 export default function MapView() {
   // 선택 상태는 URL이 원본이다. 상태관리 라이브러리 없이 이걸로 충분하고,
   // 새로고침하거나 링크를 공유해도 같은 필지가 열린다
@@ -25,7 +40,6 @@ export default function MapView() {
   const [parcel, setParcel] = useState<ParcelDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
-  const [snap, setSnap] = useState<Snap>("collapsed");
 
   const abort = useRef<AbortController | null>(null);
 
@@ -69,15 +83,9 @@ export default function MapView() {
     (pnu: string | null) => {
       // scroll: false가 없으면 선택할 때마다 화면이 위로 튄다
       router.replace(pnu ? `/?pnu=${pnu}` : "/", { scroll: false });
-      setSnap(pnu ? "middle" : "collapsed");
     },
     [router],
   );
-
-  const cycleSnap = () =>
-    setSnap((s) =>
-      s === "collapsed" ? "middle" : s === "middle" ? "expanded" : "collapsed",
-    );
 
   // 범례를 줌 구간에 맞춰 바꾸기 위해 지도가 알려준다
   const [level, setLevel] = useState<ChipLevel>("parcel");
@@ -92,109 +100,81 @@ export default function MapView() {
     [handleSelect],
   );
 
-  const panel = (
-    <ParcelPanel
-      parcel={shown}
-      loading={showLoading}
-      error={showError}
-      onRetry={() => selectedPnu && fetchDetail(selectedPnu)}
-      onClose={() => handleSelect(null)}
-    />
-  );
+  // 패널 카드가 떠 있는 동안에만 그린다. 우하단 지도 컨트롤을 밀어낼 폭이기도 하다
+  const panelOpen = Boolean(shown || showLoading || showError);
 
   return (
-    /*
-      데스크톱 전용이다. 1280px 미만에서는 레이아웃을 줄이지 않고 가로 스크롤한다
-      (.app-shell). 좁은 폭에 억지로 맞추면 패널이 눌려 데스크톱도 모바일도 아닌
-      화면이 된다.
-    */
-    <main className="app-shell flex flex-col lg:flex-row">
-      {/*
-        패널 폭 384px. 1600px 이상에서 416px.
-        1차 320px에서는 지목·면적 2열과 5년 차트가 눌린다.
-        패널 자체는 스크롤하지 않는다 — 탭 내용만 스크롤한다
-      */}
-      <aside className="hidden w-[384px] shrink-0 flex-col overflow-hidden border-r border-[var(--line)] bg-[var(--surface)] lg:flex 2xl:w-[416px]">
-        <header className="border-b border-[var(--line)] px-4 py-4">
-          {/* 워드마크 잠금 — 마크 + 이름. 간격 12px(gap-3)는 DESIGN.md 규정값 */}
-          <div className="flex items-center gap-3">
-            <BrandMark size={30} />
-            <div className="min-w-0">
-              <h1 className="font-serif-num text-[22px] leading-tight text-[var(--ink)]">
-                DDoToRo
-              </h1>
-              <p className="text-[14px] leading-tight text-[var(--ink-soft)]">
-                {SERVICE_AREA.short} 땅값 조회
-              </p>
-            </div>
-          </div>
-          <div className="mt-3">
-            <SearchBox onPick={handlePick} />
-          </div>
-        </header>
-        {panel}
-      </aside>
-
-      <div className="relative min-h-0 flex-1">
+    <main
+      className="app-shell relative overflow-hidden"
+      /*
+        패널 카드는 오른쪽 전체 높이를 차지해 MapLibre의 우하단 컨트롤
+        (줌 · 출처 표기)을 통째로 덮는다. 열려 있는 동안만 왼쪽으로 밀어낸다.
+        받는 쪽은 globals.css의 .maplibregl-ctrl-bottom-right다.
+      */
+      style={
+        {
+          "--map-ctrl-right": panelOpen ? `${PANEL_CARD_W + 16}px` : "0px",
+        } as React.CSSProperties
+      }
+    >
+      {/* 지도가 화면 전체를 채운다. 나머지는 전부 이 위에 뜬다 */}
+      <div className="absolute inset-0">
         <ParcelMap
           selectedPnu={selectedPnu}
           onSelect={handleSelect}
           flyTo={flyTo}
           onLevelChange={setLevel}
         />
+      </div>
 
-        {/*
-          범례는 좌하단 고정.
-          모바일에서는 하단 시트 높이만큼 띄워야 가리지 않는다.
-          시트를 끝까지 펼치면 지도가 거의 안 보이므로 범례도 숨긴다.
-        */}
-        <div
-          className={`absolute left-4 bottom-[var(--legend-bottom)] lg:bottom-6 ${
-            snap === "expanded" ? "max-lg:hidden" : ""
-          }`}
-          style={
-            { "--legend-bottom": `calc(${SNAP[snap]} + 16px)` } as React.CSSProperties
-          }
-        >
-          <Legend level={level} />
+      {/*
+        좌상단 검색 카드.
+        로고 행 + 입력 + 결과 목록이 한 카드 안에서 아래로 펼쳐진다.
+        결과가 길어질 수 있으므로 높이를 화면에 맞춰 제한한다.
+      */}
+      {/* 아래를 bottom-[128px]로 잘라 결과가 길어져도 좌하단 범례를 덮지 않는다 */}
+      <div className="pointer-events-none absolute bottom-[128px] left-4 top-4 z-10 flex w-[360px] flex-col">
+        <div className="card pointer-events-auto flex min-h-0 flex-col overflow-hidden">
+          {/* 워드마크 잠금 — 마크 + 이름. 사이 간격 12px(gap-3)는 규정값 */}
+          <div className="flex items-center gap-3 px-5 pt-5">
+            <BrandMark size={28} />
+            <div className="min-w-0">
+              <h1 className="text-[20px] font-semibold leading-tight tracking-[-0.02em] text-[var(--ink)]">
+                DDoToRo
+              </h1>
+              <p className="t-label leading-tight text-[var(--ink-soft)]">
+                {SERVICE_AREA.short} 땅값 조회
+              </p>
+            </div>
+          </div>
+
+          <SearchBox onPick={handlePick} />
         </div>
       </div>
 
-      {/* 모바일 하단 시트 */}
-      <div
-        className="sheet-transition fixed inset-x-0 bottom-0 z-10 flex flex-col rounded-t-xl border-t border-[var(--line)] bg-[var(--surface)] transition-[height] duration-200 ease-out lg:hidden"
-        style={{ height: SNAP[snap] }}
-      >
-        <button
-          type="button"
-          onClick={cycleSnap}
-          aria-label="정보 패널 크기 조절"
-          className="flex min-h-[44px] w-full shrink-0 items-center justify-center"
-        >
-          <span className="h-1 w-10 rounded-full bg-[var(--line)]" />
-        </button>
-
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {snap === "collapsed" ? (
-            shown ? (
-              // 접힘 단계에서는 지번과 총액만 보여준다
-              <div className="flex items-baseline justify-between gap-3 px-5">
-                <span className="font-serif-num text-[20px] text-[var(--ink)]">
-                  {[shown.ri, shown.jibun].filter(Boolean).join(" ")}
-                </span>
-                <span className="font-serif-num text-[20px] text-[var(--ink)]">
-                  {formatWon(shown.total_price)}
-                </span>
-              </div>
-            ) : (
-              <p className="px-5 text-[14px] text-[var(--ink-mid)]">
-                지도에서 땅을 눌러 보세요
-              </p>
-            )
-          ) : (
-            panel
-          )}
+      {/*
+        우측 패널 카드.
+        선택된 필지가 없고 로딩·에러도 아니면 카드 자체를 그리지 않는다 —
+        떠 있는 카드에서 빈 안내문은 지도만 가린다. 빈 상태 안내는 검색 카드가 맡는다.
+      */}
+      {panelOpen && (
+        /* 폭은 PANEL_CARD_W와 같은 값이다. 한쪽만 고치지 말 것 */
+        <div className="absolute inset-y-4 right-4 z-10 flex w-[400px] flex-col">
+          <div className="card card-raised card-in flex min-h-0 flex-1 flex-col overflow-hidden">
+            <ParcelPanel
+              parcel={shown}
+              loading={showLoading}
+              error={showError}
+              onRetry={() => selectedPnu && fetchDetail(selectedPnu)}
+              onClose={() => handleSelect(null)}
+            />
+          </div>
         </div>
+      )}
+
+      {/* 범례는 좌하단. 검색 카드가 길어져도 겹치지 않게 카드 열 바깥에 둔다 */}
+      <div className="pointer-events-none absolute bottom-6 left-4 z-10">
+        <Legend level={level} />
       </div>
     </main>
   );

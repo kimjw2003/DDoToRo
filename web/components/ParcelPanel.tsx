@@ -75,41 +75,32 @@ export default function ParcelPanel({
   const [tab, setTab] = useState<TabId>("info");
 
   if (loading) {
-    return <p className="p-5 text-[14px] text-[var(--ink-soft)]">불러오는 중</p>;
+    return <p className="t-label p-5 text-[var(--ink-soft)]">불러오는 중</p>;
   }
 
   if (error) {
     return (
       <div className="p-5">
-        <p className="text-[14px] text-[var(--ink-mid)]">
+        <p className="t-label text-[var(--ink-mid)]">
           필지 정보를 불러오지 못했습니다.
         </p>
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-3 min-h-[44px] rounded border border-[var(--ink)] px-4 text-[14px] text-[var(--ink)]"
-        >
+        <button type="button" onClick={onRetry} className="btn mt-3">
           다시 시도
         </button>
       </div>
     );
   }
 
-  if (!parcel) {
-    return (
-      <p className="p-5 text-[14px] leading-[1.7] text-[var(--ink-mid)]">
-        지도에서 땅을 눌러 보세요
-      </p>
-    );
-  }
+  // 빈 상태는 검색 카드가 맡는다. 여기서는 카드 자체가 렌더되지 않는다(MapView)
+  if (!parcel) return null;
 
   const perPyeong =
     parcel.price_per_sqm !== null ? parcel.price_per_sqm * 3.3058 : null;
 
   return (
-    <div className="panel-fade-in flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       {/* ── 고정 요약. 이 영역은 스크롤되지 않는다 ── */}
-      <div className="border-b border-[var(--line)] px-4 pb-5 pt-4">
+      <div className="px-5 pb-4 pt-5">
         <div className="grid grid-cols-[88px_1fr_auto] items-start gap-4">
           <ParcelSilhouette
             geometry={parcel.geometry}
@@ -117,10 +108,10 @@ export default function ParcelPanel({
           />
 
           <div className="min-w-0">
-            <p className="text-[14px] tracking-[0.012em] text-[var(--ink-mid)]">
+            <p className="t-label text-[var(--ink-mid)]">
               {formatRegion(parcel.sido, parcel.sigungu, parcel.emd)}
             </p>
-            <h2 className="font-serif-num text-[22px] leading-[1.3] text-[var(--ink)]">
+            <h2 className="t-jibun text-[var(--ink)]">
               {formatJibun(parcel.ri, parcel.jibun)}
             </h2>
           </div>
@@ -129,70 +120,71 @@ export default function ParcelPanel({
             type="button"
             onClick={onClose}
             aria-label="선택 해제"
-            className="-mr-1.5 -mt-1.5 grid h-11 w-11 place-items-center border border-transparent text-[var(--ink-mid)] hover:border-[var(--line-strong)] hover:bg-[var(--sunken)] hover:text-[var(--ink)]"
+            className="-mr-2 -mt-2 grid h-11 w-11 place-items-center rounded-[var(--r-full)] text-[var(--ink-mid)] transition-colors hover:bg-[var(--overlay)] hover:text-[var(--ink)]"
           >
             <svg width="19" height="19" viewBox="0 0 19 19" aria-hidden="true">
               <path
                 d="M3 3 L16 16 M16 3 L3 16"
                 stroke="currentColor"
-                strokeWidth="1.6"
+                strokeWidth="1.7"
+                strokeLinecap="round"
               />
             </svg>
           </button>
         </div>
 
-        {/* 총액 — 화면에서 가장 큰 숫자 */}
-        <p className="font-serif-num mt-5 text-[40px] leading-[1.05] text-[var(--ink)]">
-          {formatWon(parcel.total_price)}
-        </p>
-
         {/*
-          기준연도는 총액과 같은 줄에 두지 않는다.
-          값 길이에 따라 줄바꿈이 들쭉날쭉해진다
+          총액 블록. 화면에서 가장 큰 숫자이며 저채도 강조 바탕에 얹어
+          선을 긋지 않고도 요약 영역이 한 덩어리로 읽히게 한다.
         */}
-        <div className="mt-2.5">
-          <span className="badge">
-            {parcel.price_year ? `${parcel.price_year}년 공시` : "공시연도 없음"}
-          </span>
-        </div>
+        <div className="mt-4 rounded-[var(--r-md)] bg-[var(--accent-50)] px-4 py-3.5">
+          <p className="t-amount text-[var(--ink)]">
+            {formatWon(parcel.total_price)}
+          </p>
 
-        <p className="tnum mt-2 text-[14px] text-[var(--ink-mid)]">
-          {parcel.price_per_sqm === null ? (
-            "공시지가 정보 없음"
-          ) : (
-            <>
-              ㎡당 {formatWonPlain(parcel.price_per_sqm)}
-              {perPyeong !== null && <> · 평당 {formatWonPlain(perPyeong)}</>}
-            </>
-          )}
-        </p>
+          {/*
+            기준연도는 총액과 같은 줄에 두지 않는다.
+            값 길이에 따라 줄바꿈이 들쭉날쭉해진다
+          */}
+          <div className="mt-2">
+            <span className="badge badge-accent">
+              {parcel.price_year
+                ? `${parcel.price_year}년 공시`
+                : "공시연도 없음"}
+            </span>
+          </div>
+
+          <p className="tnum t-label mt-1.5 text-[var(--ink-mid)]">
+            {parcel.price_per_sqm === null ? (
+              "공시지가 정보 없음"
+            ) : (
+              <>
+                ㎡당 {formatWonPlain(parcel.price_per_sqm)}
+                {perPyeong !== null && <> · 평당 {formatWonPlain(perPyeong)}</>}
+              </>
+            )}
+          </p>
+        </div>
       </div>
 
       {/* ── 탭 ── */}
       <div
         role="tablist"
         aria-label="필지 정보 분류"
-        className="grid grid-cols-3 border-b border-[var(--line)] bg-[var(--paper)]"
+        className="tabs mx-5 grid-cols-3"
       >
-        {TABS.map((t) => {
-          const selected = tab === t.id;
-          return (
-            <button
-              key={t.id}
-              role="tab"
-              type="button"
-              aria-selected={selected}
-              onClick={() => setTab(t.id)}
-              className={`h-[50px] border-b-2 px-2 text-[16px] ${
-                selected
-                  ? "border-[var(--ink)] bg-[var(--surface)] font-semibold text-[var(--ink)]"
-                  : "border-transparent font-medium text-[var(--ink-mid)] hover:text-[var(--ink)]"
-              }`}
-            >
-              {t.label}
-            </button>
-          );
-        })}
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            type="button"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+            className="tab"
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* ── 탭 내용. 여기만 스크롤한다 ── */}
@@ -203,10 +195,10 @@ export default function ParcelPanel({
       </div>
 
       {/* ── 고정 푸터 ── */}
-      <div className="border-t border-[var(--line)] bg-[var(--surface)] p-4">
+      <div className="border-t border-[var(--line-soft)] p-4">
         <a
           href={`/land/${parcel.pnu}`}
-          className="text-[16px] text-[var(--ink)] underline decoration-1 underline-offset-[3px]"
+          className="btn btn-ghost w-full text-[var(--accent-700)]"
         >
           이 땅의 상세 페이지 →
         </a>
@@ -222,7 +214,7 @@ function InfoTab({ parcel }: { parcel: ParcelDetail }) {
 
   return (
     <>
-      <section className="border-b border-[var(--line)] px-4 py-5">
+      <section className="px-5 py-5">
         <dl className="grid grid-cols-[88px_1fr] gap-x-4 gap-y-3 text-[16px]">
           <dt className="text-[var(--ink-mid)]">지목</dt>
           <dd>{formatJimok(parcel.jimok)}</dd>
@@ -234,13 +226,14 @@ function InfoTab({ parcel }: { parcel: ParcelDetail }) {
           <dd>{address || "—"}</dd>
 
           <dt className="text-[var(--ink-mid)]">고유번호</dt>
-          <dd className="break-all font-mono text-[14px] tracking-[0.015em]">
+          {/* 모노 서체를 쓰지 않는다. Pretendard + tabular + 자간으로 조판한다 */}
+          <dd className="tnum t-label break-all tracking-[0.02em]">
             {parcel.pnu}
           </dd>
         </dl>
       </section>
 
-      <section className="px-4 py-5">
+      <section className="px-5 pb-5">
         <p className="note">
           <strong className="font-semibold text-[var(--ink)]">
             공시지가는 시세가 아닙니다.
@@ -265,7 +258,7 @@ function PriceTab({ parcel }: { parcel: ParcelDetail }) {
   return (
     <>
       {parcel.price_per_sqm === null ? (
-        <section className="border-b border-[var(--line)] px-4 py-5">
+        <section className="px-5 py-5">
           <p className="note">
             이 필지는 공시지가 정보가 없습니다. 전체 필지의 0.448%가 여기에
             해당합니다.
@@ -273,11 +266,9 @@ function PriceTab({ parcel }: { parcel: ParcelDetail }) {
         </section>
       ) : (
         history.length > 0 && (
-          <section className="border-b border-[var(--line)] px-4 py-5">
+          <section className="border-b border-[var(--line-soft)] px-5 py-5">
             <div className="mb-4 flex items-center gap-3">
-              <h3 className="text-[17px] font-semibold text-[var(--ink)]">
-                공시지가 추이
-              </h3>
+              <h3 className="t-section text-[var(--ink)]">공시지가 추이</h3>
               <span className="badge">{history.length}년</span>
               <ChartToggle mode={chartMode} onChange={setChartMode} />
             </div>
@@ -286,8 +277,8 @@ function PriceTab({ parcel }: { parcel: ParcelDetail }) {
         )
       )}
 
-      <section className="px-4 py-5">
-        <h3 className="mb-4 text-[17px] font-semibold text-[var(--ink)]">
+      <section className="px-5 py-5">
+        <h3 className="t-section mb-4 text-[var(--ink)]">
           {trade?.emd ?? parcel.emd} 지역 실거래
         </h3>
 
@@ -295,16 +286,14 @@ function PriceTab({ parcel }: { parcel: ParcelDetail }) {
           <>
             {/* 평당을 먼저, 크게. 일반인은 평으로 사고한다 */}
             <div className="flex flex-wrap items-baseline gap-2.5">
-              <span className="font-serif-num text-[22px] text-[var(--ink)]">
-                {formatWonPlain(
-                  (trade.median_price_per_sqm ?? 0) * 3.3058,
-                )}
+              <span className="tnum t-jibun text-[var(--ink)]">
+                {formatWonPlain((trade.median_price_per_sqm ?? 0) * 3.3058)}
               </span>
-              <span className="text-[14px] text-[var(--ink-mid)]">
+              <span className="t-label text-[var(--ink-mid)]">
                 평당 중앙값 · {trade.deal_count.toLocaleString()}건
               </span>
             </div>
-            <p className="tnum mt-0.5 text-[14px] text-[var(--ink-mid)]">
+            <p className="tnum t-label mt-0.5 text-[var(--ink-mid)]">
               ㎡당 {formatWonPlain(trade.median_price_per_sqm)} ·{" "}
               {formatYm(trade.from_ym)}~{formatYm(trade.to_ym)}
             </p>
@@ -322,7 +311,7 @@ function PriceTab({ parcel }: { parcel: ParcelDetail }) {
             </p>
           </>
         ) : (
-          <p className="text-[14px] text-[var(--ink-mid)]">
+          <p className="t-label text-[var(--ink-mid)]">
             최근 거래 기록이 없습니다
           </p>
         )}
@@ -488,7 +477,8 @@ function PriceChart({
 
               {mode === "bar" ? (
                 <div
-                  className="w-full"
+                  // 막대 윗변만 둥글린다. 아래까지 굴리면 바닥선이 흔들린다
+                  className="w-full rounded-t-[var(--r-xs)]"
                   style={{
                     // 최솟값도 막대가 보이도록 바닥을 깔아준다
                     height: `${barH}px`,
@@ -515,7 +505,7 @@ function PriceChart({
         })}
       </div>
 
-      <p className="mt-3 text-[14px] leading-[1.6] text-[var(--ink-mid)]">
+      <p className="t-label mt-3 text-[var(--ink-mid)]">
         {delta !== null && first && (
           <>
             {first.year}년 대비 {delta >= 0 ? "+" : ""}
@@ -610,26 +600,24 @@ function NearTab({ parcel }: { parcel: ParcelDetail }) {
 
   return (
     <>
-      <section className="border-b border-[var(--line)] px-4 py-5">
-        <h3 className="mb-4 text-[17px] font-semibold text-[var(--ink)]">
-          가까운 역
-        </h3>
+      <section className="border-b border-[var(--line-soft)] px-5 py-5">
+        <h3 className="t-section mb-3 text-[var(--ink)]">가까운 역</h3>
 
         {stations.length === 0 ? (
-          <p className="text-[14px] text-[var(--ink-mid)]">역 정보가 없습니다</p>
+          <p className="t-label text-[var(--ink-mid)]">역 정보가 없습니다</p>
         ) : (
           <ul>
             {stations.map((s, i) => (
               <li
                 key={s.name}
                 className={`flex items-center gap-3 py-3 ${
-                  i > 0 ? "border-t border-[var(--line)]" : ""
+                  i > 0 ? "border-t border-[var(--line-soft)]" : ""
                 }`}
               >
                 <CategoryIcon kind="station" />
                 <div className="min-w-0 flex-1">
                   <p className="text-[16px] text-[var(--ink)]">{s.name}</p>
-                  <p className="text-[14px] text-[var(--ink-mid)]">{s.line}</p>
+                  <p className="t-label text-[var(--ink-mid)]">{s.line}</p>
                 </div>
                 {/* 직선거리가 주 표기, 소요시간은 보조다 */}
                 <div className="shrink-0 text-right">
@@ -645,7 +633,7 @@ function NearTab({ parcel }: { parcel: ParcelDetail }) {
           </ul>
         )}
 
-        <p className="mt-3 text-[14px] leading-[1.6] text-[var(--ink-soft)]">
+        <p className="t-label mt-3 text-[var(--ink-soft)]">
           직선거리입니다. 실제 도로 거리와 다를 수 있습니다.
         </p>
       </section>
@@ -655,11 +643,9 @@ function NearTab({ parcel }: { parcel: ParcelDetail }) {
         배지 없이 그럴듯한 수치를 노출하지 않는다 — 어느 항목이 실측인지
         사용자가 구분할 수 없게 된다
       */}
-      <section className="px-4 py-5">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <h3 className="text-[17px] font-semibold text-[var(--ink)]">
-            주변 시설
-          </h3>
+      <section className="px-5 py-5">
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <h3 className="t-section text-[var(--ink)]">주변 시설</h3>
           <span className="badge">공공데이터 연동 전</span>
         </div>
 
@@ -674,19 +660,19 @@ function NearTab({ parcel }: { parcel: ParcelDetail }) {
             <li
               key={f.kind}
               className={`flex items-center gap-3 py-3 ${
-                i > 0 ? "border-t border-[var(--line)]" : ""
+                i > 0 ? "border-t border-[var(--line-soft)]" : ""
               }`}
             >
               <CategoryIcon kind={f.kind} />
               <p className="min-w-0 flex-1 text-[16px] text-[var(--ink-soft)]">
                 {f.name}
               </p>
-              <p className="shrink-0 text-[14px] text-[var(--ink-soft)]">—</p>
+              <p className="t-label shrink-0 text-[var(--ink-soft)]">—</p>
             </li>
           ))}
         </ul>
 
-        <p className="mt-3 text-[14px] leading-[1.6] text-[var(--ink-mid)]">
+        <p className="t-label mt-3 text-[var(--ink-mid)]">
           가장 가까운 시설 한 곳까지의 거리를 보여줄 예정입니다.
         </p>
       </section>
@@ -738,7 +724,7 @@ function LocalNews({
   if (!items || items.length === 0) return null;
 
   return (
-    <section className="border-t border-[var(--line)] bg-[var(--paper)] px-4 py-5">
+    <section className="border-t border-[var(--line-soft)] bg-[var(--paper)] px-5 py-5">
       <h3 className="mb-3 text-[16px] font-medium text-[var(--ink-mid)]">
         {emd} 부동산 소식
       </h3>
@@ -749,19 +735,19 @@ function LocalNews({
               href={n.link}
               target="_blank"
               rel="noreferrer"
-              className="text-[14px] leading-[1.5] text-[var(--ink)] underline decoration-1 underline-offset-[3px]"
+              className="t-label text-[var(--ink)] underline decoration-1 underline-offset-[3px]"
             >
               {n.title}
             </a>
             {n.source_date && (
-              <p className="tnum mt-0.5 text-[14px] text-[var(--ink-soft)]">
+              <p className="tnum t-label mt-0.5 text-[var(--ink-soft)]">
                 {n.source_date}
               </p>
             )}
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-[14px] leading-[1.6] text-[var(--ink-soft)]">
+      <p className="t-label mt-3 text-[var(--ink-soft)]">
         지역 단위 검색 결과입니다. 이 필지에 대한 내용이 아닙니다.
       </p>
     </section>

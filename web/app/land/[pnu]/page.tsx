@@ -94,24 +94,21 @@ export default async function LandPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <header className="no-print flex items-center gap-3 border-b border-[var(--line)] bg-[var(--surface)] px-6 py-4">
-        {/* 워드마크 잠금 — 마크 + 이름, 부제는 1px 세로선으로 나눈다 (DESIGN.md) */}
+      <header className="no-print flex items-center gap-3 bg-[var(--surface)] px-6 py-4 shadow-e1">
+        {/* 워드마크 잠금 — 마크 + 이름. 부제는 1px 세로선으로 나눈다 (DESIGN.md) */}
         <Link href="/" className="flex items-center gap-3 no-underline">
           <BrandMark size={28} />
-          <span className="font-serif-num text-[19px] font-semibold text-[var(--ink)]">
+          <span className="text-[19px] font-semibold tracking-[-0.02em] text-[var(--ink)]">
             DDoToRo
           </span>
         </Link>
-        <span className="border-l border-[var(--line-strong)] pl-3 text-[14px] text-[var(--ink-mid)]">
+        <span className="t-label border-l border-[var(--line)] pl-3 text-[var(--ink-mid)]">
           {SERVICE_AREA.short} 땅값 조회
         </span>
       </header>
 
       <main className="doc">
-        <nav
-          className="text-[14px] tracking-[0.012em] text-[var(--ink-mid)]"
-          aria-label="위치"
-        >
+        <nav className="t-label text-[var(--ink-mid)]" aria-label="위치">
           {[parcel.sido, parcel.sigungu, parcel.emd, parcel.ri]
             .filter(Boolean)
             .join(" · ")}
@@ -124,9 +121,7 @@ export default async function LandPage({ params }: Props) {
             size={104}
           />
           <div>
-            <h1 className="font-serif-num m-0 text-[34px] leading-[1.15] tracking-[-0.022em]">
-              {jibun}
-            </h1>
+            <h1 className="t-title m-0">{jibun}</h1>
             <p className="mt-2 text-[16px] text-[var(--ink-mid)]">
               {formatJimok(parcel.jimok)} · {formatArea(parcel.area_sqm)}
             </p>
@@ -134,17 +129,16 @@ export default async function LandPage({ params }: Props) {
         </div>
 
         <div className="doc-price">
-          <p className="eyebrow">
-            {parcel.price_year ?? ""} OFFICIAL PRICE
+          <p className="t-label font-medium text-[var(--accent-800)]">
+            {parcel.price_year ? `${parcel.price_year}년 개별공시지가` : "개별공시지가"}
           </p>
-          <div className="mt-2 flex flex-wrap items-baseline gap-4">
-            <span className="font-serif-num text-[46px] leading-[1.05] text-[var(--ink)]">
-              {formatWon(parcel.total_price)}
-            </span>
-            {parcel.price_year && (
-              <span className="badge">{parcel.price_year}년 공시</span>
-            )}
-          </div>
+          {/*
+            기준연도는 바로 위 아이브로가 이미 말한다.
+            여기에 배지를 또 붙이면 같은 값이 두 번 나온다 — 총액만 둔다.
+          */}
+          <p className="t-amount mt-1.5 text-[var(--ink)]">
+            {formatWon(parcel.total_price)}
+          </p>
           <p className="tnum mt-2 text-[16px] text-[var(--ink-mid)]">
             {parcel.price_per_sqm === null ? (
               "공시지가 정보 없음"
@@ -158,7 +152,7 @@ export default async function LandPage({ params }: Props) {
         </div>
 
         <section className="doc-blk">
-          <h2 className="m-0 mb-4 text-[17px] font-semibold">땅 정보</h2>
+          <h2 className="t-section m-0 mb-4">땅 정보</h2>
           <dl className="grid grid-cols-[128px_1fr] gap-x-4 gap-y-3 text-[17px]">
             <dt className="text-[16px] text-[var(--ink-mid)]">소재지</dt>
             <dd>
@@ -183,7 +177,8 @@ export default async function LandPage({ params }: Props) {
             </dd>
 
             <dt className="text-[16px] text-[var(--ink-mid)]">고유번호</dt>
-            <dd className="break-all font-mono text-[14px] tracking-[0.015em]">
+            {/* 모노 서체를 쓰지 않는다. Pretendard + tabular + 자간으로 조판한다 */}
+            <dd className="tnum t-label break-all tracking-[0.02em]">
               {parcel.pnu}
             </dd>
           </dl>
@@ -192,20 +187,21 @@ export default async function LandPage({ params }: Props) {
         {history.length > 0 && <PriceHistory history={history} />}
 
         <section className="doc-blk">
-          <h2 className="m-0 mb-4 text-[17px] font-semibold">
+          <h2 className="t-section m-0 mb-4">
             {trade?.emd ?? parcel.emd} 지역 실거래
           </h2>
           {trade && trade.deal_count > 0 ? (
             <>
               <div className="flex flex-wrap items-baseline gap-4">
-                <span className="font-serif-num text-[28px] text-[var(--ink)]">
+                <span className="tnum text-[28px] font-bold tracking-[-0.025em] text-[var(--ink)]">
                   {formatWonPlain((trade.median_price_per_sqm ?? 0) * PYEONG)}
                 </span>
-                <span className="text-[14px] text-[var(--ink-mid)]">
-                  평당 중앙값 · {trade.deal_count.toLocaleString()}건 · 최근 36개월
+                <span className="t-label text-[var(--ink-mid)]">
+                  평당 중앙값 · {trade.deal_count.toLocaleString()}건 · 최근
+                  36개월
                 </span>
               </div>
-              <p className="tnum mt-0.5 text-[14px] text-[var(--ink-mid)]">
+              <p className="tnum t-label mt-0.5 text-[var(--ink-mid)]">
                 ㎡당 {formatWonPlain(trade.median_price_per_sqm)}
               </p>
               <p className="note mt-4">
@@ -217,14 +213,14 @@ export default async function LandPage({ params }: Props) {
               </p>
             </>
           ) : (
-            <p className="text-[14px] text-[var(--ink-mid)]">
+            <p className="t-label text-[var(--ink-mid)]">
               최근 거래 기록이 없습니다
             </p>
           )}
         </section>
 
         <section className="doc-blk">
-          <h2 className="m-0 mb-4 text-[17px] font-semibold">공시지가 안내</h2>
+          <h2 className="t-section m-0 mb-4">공시지가 안내</h2>
           <p className="m-0 max-w-[62ch] text-[16px] leading-[1.7]">
             공시지가는 연 1회, 매년 1월 1일을 기준으로 정부가 공시하는{" "}
             <strong className="font-semibold">공적 가격</strong>입니다. 세금과
@@ -234,10 +230,7 @@ export default async function LandPage({ params }: Props) {
         </section>
 
         <div className="no-print flex flex-wrap gap-3 pt-8">
-          <Link
-            href={`/?pnu=${parcel.pnu}`}
-            className="text-[16px] text-[var(--ink)] underline decoration-1 underline-offset-[3px]"
-          >
+          <Link href={`/?pnu=${parcel.pnu}`} className="btn btn-primary">
             지도에서 보기 →
           </Link>
         </div>
@@ -277,7 +270,7 @@ function PriceHistory({
 
   return (
     <section className="doc-blk">
-      <h2 className="m-0 mb-4 flex flex-wrap items-center gap-2 text-[17px] font-semibold">
+      <h2 className="t-section m-0 mb-4 flex flex-wrap items-center gap-2">
         공시지가 추이
         <span className="badge">{history.length}년 · 연도 수 가변</span>
       </h2>
@@ -309,7 +302,7 @@ function PriceHistory({
         ))}
       </div>
 
-      <p className="mt-3 max-w-[60ch] text-[14px] leading-[1.6] text-[var(--ink-mid)]">
+      <p className="t-label mt-3 max-w-[60ch] text-[var(--ink-mid)]">
         단위 ㎡당 원(천 단위).
         {delta !== null && first && (
           <>
