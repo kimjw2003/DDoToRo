@@ -85,6 +85,25 @@ async function replaceTables(local, remote, names) {
       if (!String(e.message).includes("already exists")) throw e;
     }
 
+    /*
+      인덱스도 함께 옮긴다.
+
+      표만 만들면 poi(7만 행)에서 최근접 조회가 전체 스캔이 된다.
+      sqlite_master의 sql이 null인 행은 UNIQUE 제약이 자동으로 만든 것이라 건너뛴다.
+    */
+    const idx = await local.execute({
+      sql: "SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name=? AND sql IS NOT NULL",
+      args: [t],
+    });
+    for (const row of idx.rows) {
+      try {
+        await remote.execute(row.sql);
+      } catch (e) {
+        if (!String(e.message).includes("already exists")) throw e;
+      }
+    }
+    if (idx.rows.length) console.log(`  ${t}  인덱스 ${idx.rows.length}개 확인`);
+
     const before = await remote.execute(`SELECT count(*) AS n FROM ${t}`);
 
     const cols = rs.columns;

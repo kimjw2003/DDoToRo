@@ -136,9 +136,33 @@ CREATE TABLE station (
   lat    REAL NOT NULL,
   kind   TEXT
 );
+
+/*
+  주변 생활시설. 출처는 OpenStreetMap이다(etl/fetch_facilities.py).
+
+  버스정류장만 4.8만 건이라 역(700행)과 달리 인덱스가 필요하다.
+  조회 모양은 '카테고리 하나를 골라 위경도 상자로 자르기'이므로
+  아래 idx_poi_kind_pos를 그 순서로 만든다.
+*/
+CREATE TABLE poi (
+  osm_type TEXT NOT NULL,
+  osm_id   INTEGER NOT NULL,
+  kind     TEXT NOT NULL,
+  name     TEXT,
+  lng      REAL NOT NULL,
+  lat      REAL NOT NULL,
+  PRIMARY KEY (osm_type, osm_id)
+);
 """
 
 INDEXES = """
+/*
+  카테고리별 최근접 1건 조회.
+  kind로 먼저 갈리고 lat 범위로 잘린 뒤 lng까지 인덱스에 실려 있어
+  테이블을 읽지 않고 후보가 걸러진다(커버링).
+*/
+CREATE INDEX idx_poi_kind_pos ON poi(kind, lat, lng, name);
+
 CREATE UNIQUE INDEX idx_parcel_pnu ON parcel(pnu);
 CREATE INDEX idx_parcel_jibun      ON parcel(jibun);
 CREATE INDEX idx_trade_emd         ON land_trade(sigungu_cd, emd, deal_ym);
@@ -316,25 +340,43 @@ STATION_COPY = (
     "역",
 )
 
+POI_COPY = (
+    "SELECT osm_type, osm_id, kind, name, lng, lat FROM poi",
+    "INSERT INTO poi VALUES (?,?,?,?,?,?)",
+    "주변 시설",
+)
+
 
 def copy_stations(pg, db) -> None:
     copy_table(pg, db, *STATION_COPY)
 
 
-def refresh_stations(out: pathlib.Path) -> None:
-    """기존 SQLite의 역 표만 갈아끼운다."""
+def copy_poi(pg, db) -> None:
+    copy_table(pg, db, *POI_COPY)
+
+
+def refresh_osm(out: pathlib.Path, tables: tuple[str, ...]) -> None:
+    """기존 SQLite의 OSM 유래 표(station·poi)만 갈아끼운다.
+
+    둘 다 OSM에서 오고 노선 개통·시설 개폐 때만 움직여 실거래보다도 드물게 갱신된다.
+    그때 521만 필지를 다시 내보낼 이유가 없다.
+    """
     if not out.exists():
-        raise SystemExit(f"{out} 가 없다. --stations-only는 기존 파일을 갱신하는 모드다")
+        raise SystemExit(f"{out} 가 없다. 기존 파일을 갱신하는 모드다")
 
     t0 = time.time()
     db = sqlite3.connect(out)
     with psycopg.connect(dsn()) as pg:
-        db.execute("DELETE FROM station")
-        copy_stations(pg, db)
+        for t in tables:
+            db.execute(f"DELETE FROM {t}")
+        if "station" in tables:
+            copy_stations(pg, db)
+        if "poi" in tables:
+            copy_poi(pg, db)
     db.commit()
     db.close()
     print("=" * 60)
-    print(f"{out}  역만 갱신 ({time.time() - t0:.0f}초)")
+    print(f"{out}  {'·'.join(tables)} 갱신 ({time.time() - t0:.0f}초)")
 
 
 def refresh_trades(out: pathlib.Path) -> None:
@@ -375,6 +417,11 @@ def main() -> None:
         action="store_true",
         help="역 표만 갈아끼운다. 필지는 손대지 않는다",
     )
+    ap.add_argument(
+        "--poi-only",
+        action="store_true",
+        help="주변 시설 표만 갈아끼운다. 필지는 손대지 않는다",
+    )
     args = ap.parse_args()
     out = pathlib.Path(args.out)
 
@@ -386,7 +433,11 @@ def main() -> None:
         return
 
     if args.stations_only:
-        refresh_stations(out)
+        refresh_osm(out, ("station",))
+        return
+
+    if args.poi_only:
+        refresh_osm(out, ("poi",))
         return
 
     if out.exists():
@@ -401,6 +452,7 @@ def main() -> None:
 
         copy_trades(pg, db)
         copy_stations(pg, db)
+        copy_poi(pg, db)
         copy_table(
             pg, db,
             "SELECT level, sigungu_cd, name, sido, sigungu, lng, lat, "

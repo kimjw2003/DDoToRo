@@ -1,3 +1,5 @@
+import type { InValue } from "@libsql/client";
+
 import { readAssetJson } from "@/lib/assets.server";
 import { query } from "@/lib/db";
 
@@ -25,6 +27,15 @@ export type Parcel = {
   price_history: { year: number; price_per_sqm: number | null }[];
   /** 가까운 순 3개. 직선거리(m)만 준다 — 도로 경로가 아니다 */
   nearby_stations: { name: string; line: string; distance_m: number }[];
+  /**
+   * 카테고리별 **가장 가까운 하나**. 개수를 세지 않는다.
+   * 반경 안에 없으면 distance_m이 null이고, 자리는 남는다.
+   */
+  nearby_facilities: {
+    kind: string;
+    name: string | null;
+    distance_m: number | null;
+  }[];
   geometry: {
     type: "Polygon" | "MultiPolygon";
     coordinates: number[][][] | number[][][][];
@@ -142,6 +153,85 @@ async function nearbyStations(lng: number, lat: number) {
     .slice(0, 3);
 }
 
+/**
+ * 카테고리별 최대 탐색 반경(m).
+ *
+ * 카테고리마다 '그 이상은 의미가 없는' 거리가 다르다.
+ * 버스정류장이 8km 밖에 있으면 교통편이 없는 것이고, 면사무소는 20km도 정상이다.
+ * 넉넉하게 잡으면 조회가 무거워지고, 좁게 잡으면 시골 필지가 전부 빈칸이 된다.
+ */
+const FACILITY_MAX_M: Record<string, number> = {
+  school: 15_000,
+  hospital: 15_000,
+  store: 8_000,
+  office: 20_000,
+  bus: 5_000,
+};
+
+/** 화면에 뜨는 순서다. ParcelPanel의 CategoryIcon 이름과 같아야 한다 */
+const FACILITY_ORDER = ["school", "hospital", "store", "office", "bus"] as const;
+
+/**
+ * 카테고리별 '가장 가까운 하나'.
+ *
+ * 개수를 세지 않는다 — 시골 땅에서 '반경 500m 내 30개'는 의미가 없고,
+ * 사려는 사람이 묻는 것은 '가장 가까운 초등학교가 몇 km인가'다.
+ *
+ * 다섯 카테고리를 **한 질의**로 묶는다. Turso는 원격 HTTP라 왕복 한 번이
+ * 100~200ms다. 카테고리마다 따로 쏘면 그것만으로 1초가 붙는다.
+ *
+ * 정렬은 하버사인이 아니라 평면 근사다. 등경도 보정(cos lat)만 넣으면
+ * 수십 km 범위에서 순위가 뒤바뀌지 않으므로, 후보를 고르는 데는 이걸로 충분하고
+ * 화면에 쓸 실제 거리만 앱에서 하버사인으로 다시 잰다.
+ */
+async function nearbyFacilities(lng: number, lat: number) {
+  // 위도 1도 ≈ 111km. 경도 1도는 위도에 따라 줄어든다
+  const mPerLat = 111_000;
+  const mPerLng = 111_000 * Math.cos((lat * Math.PI) / 180);
+  // 평면 근사에서 경도 차를 위도 차와 같은 척도로 만드는 계수
+  const lngScale = (mPerLng / mPerLat) ** 2;
+
+  const parts: string[] = [];
+  const args: InValue[] = [];
+  for (const kind of FACILITY_ORDER) {
+    const r = FACILITY_MAX_M[kind];
+    const dLat = r / mPerLat;
+    const dLng = r / mPerLng;
+    parts.push(
+      `SELECT * FROM (
+         SELECT kind, name, lng, lat FROM poi
+          WHERE kind = ? AND lat BETWEEN ? AND ? AND lng BETWEEN ? AND ?
+          ORDER BY (lat - ?) * (lat - ?) + (lng - ?) * (lng - ?) * ?
+          LIMIT 1)`,
+    );
+    args.push(
+      kind,
+      lat - dLat, lat + dLat,
+      lng - dLng, lng + dLng,
+      lat, lat, lng, lng, lngScale,
+    );
+  }
+
+  const rows = await query<{
+    kind: string;
+    name: string | null;
+    lng: number;
+    lat: number;
+  }>(parts.join(" UNION ALL "), args);
+
+  const found = new Map(rows.map((r) => [r.kind, r]));
+
+  // 없는 카테고리도 자리를 남긴다 — 목록이 필지마다 들쭉날쭉하면 비교가 어렵다
+  return FACILITY_ORDER.map((kind) => {
+    const r = found.get(kind);
+    return {
+      kind,
+      name: r?.name ?? null,
+      distance_m: r ? Math.round(distanceM(lng, lat, r.lng, r.lat)) : null,
+    };
+  });
+}
+
 /** `[[2026,10800], ...]` -> `[{year, price_per_sqm}, ...]` */
 function parseHistory(raw: [number, number | null][] | undefined) {
   if (!raw) return [];
@@ -182,7 +272,11 @@ export async function getParcel(pnu: string): Promise<Parcel | null> {
   );
   const t = trade[0];
 
-  const nearby_stations = await nearbyStations(p.lng, p.lat);
+  // 둘 다 DB 왕복이라 나란히 보낸다. 순서대로 기다리면 지연이 두 배가 된다
+  const [nearby_stations, nearby_facilities] = await Promise.all([
+    nearbyStations(p.lng, p.lat),
+    nearbyFacilities(p.lng, p.lat),
+  ]);
 
   const total_price =
     p.area_sqm !== null && p.price_per_sqm !== null
@@ -206,6 +300,7 @@ export async function getParcel(pnu: string): Promise<Parcel | null> {
     geometry: p.geometry,
     price_history: parseHistory(p.price_history),
     nearby_stations,
+    nearby_facilities,
     emd_trade_avg:
       !t || t.deal_count === null
         ? null

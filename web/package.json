@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "copy:maplibre": "mkdir -p public/maplibre && cp node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs node_modules/maplibre-gl/dist/maplibre-gl-shared.mjs public/maplibre/",
-    "copy:fonts": "rm -rf public/fonts/pretendard && mkdir -p public/fonts/pretendard && cp node_modules/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css public/fonts/pretendard/ && cp -R node_modules/pretendard/dist/web/variable/woff2-dynamic-subset public/fonts/pretendard/",
+    "copy:fonts": "rm -rf public/fonts/.tmp && mkdir -p public/fonts/.tmp && cp node_modules/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css public/fonts/.tmp/ && cp -R node_modules/pretendard/dist/web/variable/woff2-dynamic-subset public/fonts/.tmp/ && rm -rf public/fonts/pretendard && mv public/fonts/.tmp public/fonts/pretendard",
     "predev": "npm run copy:maplibre && npm run copy:fonts",
     "prebuild": "npm run copy:maplibre && npm run copy:fonts"
   },

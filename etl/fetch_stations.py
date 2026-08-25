@@ -10,7 +10,7 @@
   키를 받으면 이 파일만 갈아끼우면 된다 — 아래 to_rows()가 내놓는 모양만 맞추면
   나머지 파이프라인은 그대로다.
 
-  **OSM은 ODbL이다.** 화면에 출처를 반드시 표기한다(web/components/Legend.tsx).
+  **OSM은 ODbL이다.** 화면에 출처를 반드시 표기한다(web/components/ParcelPanel.tsx 주변 탭).
 
 노선명이 붙는 방식이 함정이다.
   역 노드에는 노선 정보가 없다. route 관계에만 있고, 그 관계의 멤버는 역 노드가
@@ -32,27 +32,17 @@ import math
 import os
 import re
 import sys
-import time
 from pathlib import Path
 
 import psycopg
-import requests
 from dotenv import load_dotenv
+
+import overpass
 
 ROOT = Path(__file__).parent.parent
 
-"""
-Overpass 인스턴스.
-
-공용 서버는 동시 슬롯이 2개뿐이라 짧은 간격으로 여러 번 쏘면 429가 난다.
-그래서 질의를 하나로 합쳤지만, 그래도 막히면 --endpoint로 미러를 쓴다.
-kumi.systems 미러가 한도가 더 넉넉하다.
-"""
-ENDPOINTS = {
-    "main": "https://overpass-api.de/api/interpreter",
-    "kumi": "https://overpass.kumi.systems/api/interpreter",
-}
-OVERPASS = ENDPOINTS["main"]
+# 어느 Overpass 인스턴스를 쓸지. main | kumi | 전체 URL (--endpoint로 덮는다)
+ENDPOINT = "main"
 
 # 수도권 + 경기도 전역이 들어가는 상자. 남,서,북,동
 # 지역명을 코드에 박지 않는다는 규칙에 따라 인자로 덮어쓸 수 있게 둔다
@@ -76,49 +66,6 @@ OSM은 레일바이크 종점·나루터도 railway=station/halt로 찍어 둔�
 땅을 보러 온 사람에게 교통 정보가 아니다.
 """
 NOT_STATION_RE = re.compile(r"레일바이크|선착장|나루터|모노레일 종점")
-
-RETRIES = 5
-SLEEP = 3.0
-
-"""
-User-Agent를 반드시 보낸다.
-
-requests 기본값(python-requests/x.y)으로 보내면 Overpass가 **406**을 돌려준다.
-익명 스크립트를 막는 정책이고, 이용 정책 자체가 식별 가능한 UA를 요구한다.
-빼면 재시도를 아무리 늘려도 통과하지 못한다.
-"""
-HEADERS = {
-    "User-Agent": "DDoToRo-ETL/1.0 (+https://github.com/kimjw2003/DDoToRo)"
-}
-
-
-def overpass(query: str) -> dict:
-    """Overpass 질의.
-
-    서버가 바쁘면 200이 아닌 XML/HTML 오류(504, 'too busy')를 돌려준다.
-    공용 인스턴스라 흔한 일이므로 넉넉히 재시도한다.
-    """
-    for attempt in range(1, RETRIES + 1):
-        try:
-            r = requests.post(
-                OVERPASS, data={"data": query}, headers=HEADERS, timeout=240
-            )
-            # 오류일 때는 JSON이 아니라 XML/HTML이 온다
-            if r.status_code == 200 and r.text.lstrip().startswith("{"):
-                return r.json()
-            if r.status_code == 406:
-                raise SystemExit(
-                    "Overpass가 406을 돌려줬다. User-Agent가 빠졌는지 확인할 것"
-                )
-            reason = "서버 혼잡" if "too busy" in r.text or r.status_code == 504 else f"HTTP {r.status_code}"
-        except requests.RequestException as e:
-            reason = str(e)[:80]
-        if attempt < RETRIES:
-            wait = SLEEP * attempt
-            print(f"  재시도 {attempt}/{RETRIES - 1} ({reason}) — {wait:.0f}초 대기")
-            time.sleep(wait)
-    raise SystemExit("Overpass 응답을 받지 못했다. 잠시 뒤 다시 시도할 것")
-
 
 def query_all(bbox: tuple) -> str:
     """역 노드 · route 관계 · 관계 멤버 노드를 **한 번에** 받는다.
@@ -247,7 +194,7 @@ def to_rows(bbox: tuple, raw_in: str | None = None, raw_out: str | None = None) 
         els = json.loads(Path(raw_in).read_text(encoding="utf-8"))["elements"]
     else:
         print(f"Overpass 질의 (bbox {bbox})")
-        els = overpass(query_all(bbox))["elements"]
+        els = overpass.fetch(query_all(bbox), ENDPOINT)["elements"]
         if raw_out:
             Path(raw_out).write_text(
                 json.dumps({"elements": els}, ensure_ascii=False), encoding="utf-8"
@@ -362,8 +309,8 @@ def main() -> None:
     )
     args = ap.parse_args()
 
-    global OVERPASS
-    OVERPASS = ENDPOINTS.get(args.endpoint, args.endpoint)
+    global ENDPOINT
+    ENDPOINT = args.endpoint
 
     load_dotenv(ROOT / ".env")
 

@@ -63,6 +63,7 @@
 |---|---|---|
 | 국토교통부_개별공시지가정보 | SHP (EPSG:5186, cp949) | 다운로드 완료 — **시도 단위 배포**라 `AL_D150_41_*` 하나에 경기도 전체가 들어 있다 (4.4GB, 6개 파일로 분할) |
 | 전철·철도 역 | OpenStreetMap (Overpass API) | 수집 완료 — `etl/fetch_stations.py`, 703개 |
+| 주변 생활시설 | OpenStreetMap (Overpass API) | 수집 완료 — `etl/fetch_facilities.py`, 72,688개 |
 | 국토교통부_연속지적_전국 | SHP | 조건부 (아래 참고) |
 | 국토교통부_토지 매매 실거래가 자료 | 오픈API | 인증키 발급 완료 |
 | 법정동코드 | CSV (code.go.kr) | 다운로드 |
@@ -72,15 +73,18 @@
 개별공시지가 SHP에 Polygon geometry와 지가가 모두 들어있다면 연속지적도는 **사용하지 않는다**.
 Task 1에서 이걸 먼저 확인한다. 확인 전에 조인 로직을 작성하지 말 것.
 
-### 역 데이터 (OSM)
+### 역·주변시설 데이터 (OSM)
 
-`etl/fetch_stations.py`가 Overpass에서 받아 `station` 테이블에 넣는다.
+`etl/fetch_stations.py`(역)와 `etl/fetch_facilities.py`(시설)가 Overpass에서 받아
+`station` / `poi` 테이블에 넣는다. Overpass 호출은 `etl/overpass.py` 한 곳을 거친다 —
+아래 함정들이 스크립트마다 흩어지지 않게 하려는 것이다.
 지역명을 박지 않으려고 bbox를 인자로 받는다.
 
 ```
-python fetch_stations.py                       # 수도권 전역
-python export_sqlite.py --stations-only        # SQLite 갱신
-node push_turso.mjs --local=file:<경로>/ddotoro.db --replace=station
+python fetch_stations.py                       # 역 703개
+python fetch_facilities.py                     # 시설 72,688개 (몇 분 걸린다)
+python export_sqlite.py --stations-only        # 또는 --poi-only
+node push_turso.mjs --local=file:<경로>/ddotoro.db --replace=station,poi
 ```
 
 - **User-Agent를 반드시 보낸다.** requests 기본값이면 Overpass가 406을 준다
@@ -90,6 +94,13 @@ node push_turso.mjs --local=file:<경로>/ddotoro.db --replace=station
   이름으로 매칭하면 섞인다. 좌표 근접(250m)으로 잇는다
 - **OSM은 ODbL이라 화면에 출처를 표기해야 한다** (`ParcelPanel.tsx`의 주변 탭)
 - 노선명이 없는 역이 5% 있다(서해선 등 route 관계 미등록). 이름·거리만 보여주고 그 줄은 감춘다
+- **시설은 `out center`로 받는다.** 학교·병원·마트는 노드가 아니라 건물 폴리곤(way)으로
+  찍힌 것이 많아 `node`만 받으면 절반이 사라진다
+- **개수를 세지 않는다.** 카테고리별로 **가장 가까운 하나까지의 거리**만 보여준다.
+  시골 땅에서 '반경 500m 내 30개'는 의미가 없다
+- 카테고리 키(`school`·`hospital`·`store`·`office`·`bus`)는 세 곳이 같아야 한다 —
+  `fetch_facilities.py`의 `CATEGORIES`, `parcel.ts`의 `FACILITY_ORDER`,
+  `ParcelPanel.tsx`의 `CategoryIcon`·`FACILITY_LABEL`
 - 공공데이터포털 `전국도시철도역사정보표준데이터`(15013205)로 갈아타려면
   `fetch_stations.py`의 `to_rows()` 출력 모양만 맞추면 된다. 데이터셋별 활용신청이 필요하다
 

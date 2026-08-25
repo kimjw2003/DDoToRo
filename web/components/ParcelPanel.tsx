@@ -30,6 +30,12 @@ export type ParcelDetail = {
   price_history?: { year: number; price_per_sqm: number | null }[];
   /** 가까운 순. 직선거리(m)다 */
   nearby_stations?: { name: string; line: string; distance_m: number }[];
+  /** 카테고리별 가장 가까운 하나. 반경 밖이면 distance_m이 null이다 */
+  nearby_facilities?: {
+    kind: string;
+    name: string | null;
+    distance_m: number | null;
+  }[];
   geometry: ParcelGeometry | null;
   emd_trade_avg: {
     emd: string | null;
@@ -595,8 +601,29 @@ function timeText(m: number): string {
   return `차 ${car}분 추정`;
 }
 
+/**
+ * 카테고리 라벨.
+ *
+ * 키는 poi 테이블의 kind, etl/fetch_facilities.py의 CATEGORIES와 같아야 한다.
+ * '보건지소'가 아니라 '병원·의원'인 이유: 보건지소만 세면 시골에서도 대부분 빈칸이
+ * 되는데, 실제로 궁금한 것은 '아플 때 갈 곳이 얼마나 가까운가'다.
+ */
+const FACILITY_LABEL: Record<string, string> = {
+  school: "초등학교",
+  hospital: "병원·의원",
+  store: "마트·편의점",
+  office: "관공서",
+  bus: "버스정류장",
+};
+
+/** 1km 미만은 m로. '0.3km'보다 '280m'가 걸어갈 만한지 판단하기 쉽다 */
+function formatKm(m: number): string {
+  return m < 1000 ? `${Math.round(m / 10) * 10}m` : `${(m / 1000).toFixed(1)}km`;
+}
+
 function NearTab({ parcel }: { parcel: ParcelDetail }) {
   const stations = parcel.nearby_stations ?? [];
+  const facilities = parcel.nearby_facilities ?? [];
 
   return (
     <>
@@ -663,36 +690,50 @@ function NearTab({ parcel }: { parcel: ParcelDetail }) {
         사용자가 구분할 수 없게 된다
       */}
       <section className="px-5 py-5">
-        <div className="mb-3 flex flex-wrap items-center gap-3">
-          <h3 className="t-section text-[var(--ink)]">주변 시설</h3>
-          <span className="badge">공공데이터 연동 전</span>
-        </div>
+        <h3 className="t-section mb-3 text-[var(--ink)]">주변 시설</h3>
 
         <ul>
-          {[
-            { kind: "school", name: "초등학교" },
-            { kind: "hospital", name: "보건지소" },
-            { kind: "store", name: "마트" },
-            { kind: "office", name: "관공서" },
-            { kind: "bus", name: "버스정류장" },
-          ].map((f, i) => (
-            <li
-              key={f.kind}
-              className={`flex items-center gap-3 py-3 ${
-                i > 0 ? "border-t border-[var(--line-soft)]" : ""
-              }`}
-            >
-              <CategoryIcon kind={f.kind} />
-              <p className="min-w-0 flex-1 text-[16px] text-[var(--ink-soft)]">
-                {f.name}
-              </p>
-              <p className="t-label shrink-0 text-[var(--ink-soft)]">—</p>
-            </li>
-          ))}
+          {facilities.map((f, i) => {
+            const label = FACILITY_LABEL[f.kind] ?? f.kind;
+            const far = f.distance_m === null;
+            return (
+              <li
+                key={f.kind}
+                className={`flex items-center gap-3 py-3 ${
+                  i > 0 ? "border-t border-[var(--line-soft)]" : ""
+                }`}
+              >
+                <CategoryIcon kind={f.kind} />
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={`text-[16px] ${
+                      far ? "text-[var(--ink-soft)]" : "text-[var(--ink)]"
+                    }`}
+                  >
+                    {label}
+                  </p>
+                  {/* 이름이 없는 시설이 있다(특히 버스정류장). 그 줄은 감춘다 */}
+                  {f.name && !far && (
+                    <p className="t-label truncate text-[var(--ink-mid)]">
+                      {f.name}
+                    </p>
+                  )}
+                </div>
+                <p
+                  className={`tnum shrink-0 text-[16px] ${
+                    far ? "t-label text-[var(--ink-soft)]" : "text-[var(--ink)]"
+                  }`}
+                >
+                  {f.distance_m === null ? "—" : formatKm(f.distance_m)}
+                </p>
+              </li>
+            );
+          })}
         </ul>
 
-        <p className="t-label mt-3 text-[var(--ink-mid)]">
-          가장 가까운 시설 한 곳까지의 거리를 보여줄 예정입니다.
+        <p className="t-label mt-3 text-[var(--ink-soft)]">
+          가장 가까운 한 곳까지의 직선거리입니다. &lsquo;—&rsquo;는 탐색 범위 안에
+          없다는 뜻입니다.
         </p>
       </section>
 
